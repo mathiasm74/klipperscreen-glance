@@ -239,6 +239,8 @@ class Panel(ScreenPanel):
     def _show_buttons(self):
         job_over = self.state in ("complete", "cancelled", "error", "standby")
         paused = self.state == "paused"
+        for b in (self.btn_pause, self.btn_resume):
+            self._set_busy(b, False)
         self.btn_pause.set_visible(not paused)
         self.btn_resume.set_visible(paused)
         self.btn_stop.set_visible(not job_over)
@@ -507,12 +509,23 @@ class Panel(ScreenPanel):
         self.flow_val.set_label(f"{self.flow_pct}%")
         self._screen._ws.klippy.gcode_script(f"M221 S{self.flow_pct}")
 
+    def _set_busy(self, button, busy):
+        # GTK3 won't scale GtkSpinner's drawn animation no matter what the
+        # node's CSS min-size says, so busy-state is a whole-button pulse
+        ctx = button.get_style_context()
+        if busy:
+            button.set_sensitive(False)
+            ctx.add_class("glance-busy")
+        else:
+            ctx.remove_class("glance-busy")
+
     def pause(self, widget):
-        self.btn_pause.set_sensitive(False)
-        self._screen._send_action(widget, "printer.print.pause", {})
+        self._set_busy(self.btn_pause, True)
+        self._screen._ws.klippy.print_pause()
 
     def resume(self, widget):
-        self._screen._send_action(widget, "printer.print.resume", {})
+        self._set_busy(self.btn_resume, True)
+        self._screen._ws.klippy.print_resume()
 
     def cancel(self, widget):
         buttons = [

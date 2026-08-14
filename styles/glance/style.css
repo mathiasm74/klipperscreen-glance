@@ -104,12 +104,15 @@ button {
     font-size: 26px;
 }
 
-/* the spinner ANIMATION draws at the CSS node size (Adwaita default 16px),
-   regardless of the widget's size request - so it must be sized here */
-.glance-action spinner,
-button spinner {
-    min-width: 52px;
-    min-height: 52px;
+/* busy feedback: GTK3 won't scale GtkSpinner's drawn animation, so busy
+   buttons pulse instead */
+@keyframes glance-busy-pulse {
+    0%   { opacity: 1; }
+    50%  { opacity: 0.3; }
+    100% { opacity: 1; }
+}
+.glance-busy {
+    animation: glance-busy-pulse 900ms ease-in-out infinite;
 }
 
 .glance-step {
