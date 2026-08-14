@@ -399,8 +399,13 @@ class Panel(ScreenPanel):
             else (self._printer.get_stat("virtual_sdcard", "progress") or 0)
 
         print_duration = float(self._printer.get_stat("print_stats", "print_duration") or 0)
-        last_time = self.file_metadata.get("last_time", 0)
-        slicer_time = self.file_metadata.get("estimated_time", 0)
+        # reference estimates assume 100% speed; scale by sqrt(factor) so the
+        # ETA reacts immediately to the Speed stepper (sqrt because accel and
+        # min-layer-times keep real prints from scaling linearly). The measured
+        # pace below self-corrects over time on its own.
+        speed_adj = (max(self.speed_pct, 10) / 100) ** 0.5
+        last_time = self.file_metadata.get("last_time", 0) / speed_adj
+        slicer_time = self.file_metadata.get("estimated_time", 0) / speed_adj
         file_time = (print_duration / progress) if progress > 0 else 0
 
         # blend like stock "auto": trust history/slicer early, measured pace late
