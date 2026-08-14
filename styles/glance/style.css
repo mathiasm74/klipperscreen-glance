@@ -107,8 +107,15 @@ button {
 .glance-rail trough {
     min-height: 32px;
     border-radius: 0;
-    background-color: #1a1d22;
+    background-color: #2a2e36;
 }
+/* the rail is the frame's bottom edge: keep its empty part visible by
+   tinting the trough with the phase color */
+.glance-rail.ph-heat  trough { background-color: alpha(#ffb000, 0.25); }
+.glance-rail.ph-prep  trough { background-color: alpha(#33c5e8, 0.25); }
+.glance-rail.ph-print trough { background-color: alpha(#3fd968, 0.25); }
+.glance-rail.ph-done  trough { background-color: alpha(#a98bf5, 0.25); }
+.glance-rail.ph-err   trough { background-color: alpha(#e5484d, 0.25); }
 .glance-rail progress {
     min-height: 32px;
     border-radius: 0;
