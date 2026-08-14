@@ -243,7 +243,9 @@ class Panel(ScreenPanel):
         self.btn_resume.set_visible(paused)
         self.btn_stop.set_visible(not job_over)
         self.btn_close.set_visible(job_over)
-        self.btn_pause.set_sensitive(self.state == "printing")
+        # pause can't act until PRINT_START releases the gcode queue, so
+        # don't offer it before the print phase - cancel is the real option
+        self.btn_pause.set_sensitive(self.state == "printing" and self.phase == "print")
         self.btn_stop.set_sensitive(self.state in ("printing", "paused"))
         # speed/flow only matter while gcode is actually running; during
         # heat/level/mesh/cool the rows just add noise, so hide them
@@ -523,14 +525,21 @@ class Panel(ScreenPanel):
         self.btn_stop.set_sensitive(False)
         if self.phase in ("heat", "cool", "prep"):
             # PRINT_START holds the gcode queue through its heat waits and
-            # leveling, so a queued CANCEL_PRINT would only act minutes later,
-            # after the print visibly starts. The firmware-restart API bypasses
-            # the queue (same escape hatch as Mainsail's firmware restart) and
-            # kills the job immediately; heaters turn off with it.
-            self._screen._ws.klippy.restart_firmware()
+            # leveling, so a queued CANCEL_PRINT - and even Moonraker's
+            # firmware_restart, which is a queued script too - only acts after
+            # the queue frees up, minutes later. The emergency-stop webhook is
+            # the one call that bypasses the queue; follow it with a firmware
+            # restart so Klipper comes straight back instead of sitting in
+            # the shutdown screen.
+            self._screen._ws.klippy.emergency_stop()
+            GLib.timeout_add_seconds(2, self._fw_restart_once)
             self.set_job_state("cancelled")
         else:
             self._screen._ws.klippy.print_cancel()
+
+    def _fw_restart_once(self):
+        self._screen._ws.klippy.restart_firmware()
+        return False  # single-shot timeout
 
     def open_details(self, widget):
         self._screen.show_panel("job_status")

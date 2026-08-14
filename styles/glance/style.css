@@ -104,10 +104,12 @@ button {
     font-size: 26px;
 }
 
-/* busy-state spinner (KlippyGtk Button_busy) is tiny by default */
-.glance-action spinner {
-    min-width: 44px;
-    min-height: 44px;
+/* the spinner ANIMATION draws at the CSS node size (Adwaita default 16px),
+   regardless of the widget's size request - so it must be sized here */
+.glance-action spinner,
+button spinner {
+    min-width: 52px;
+    min-height: 52px;
 }
 
 .glance-step {
