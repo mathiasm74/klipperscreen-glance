@@ -27,6 +27,16 @@ button {
     border-radius: 10px;
 }
 
+/* disabled sidebar buttons stack two dim effects (action-bar opacity and
+   GTK's icon dim) and vanish on the near-black theme; keep them clearly
+   visible, just obviously inactive */
+.action_bar button:disabled {
+    opacity: 0.7;
+}
+.action_bar button:disabled image {
+    -gtk-icon-effect: none;
+}
+
 /* ---- glance job panel ---- */
 
 .glance-root {
