@@ -104,6 +104,12 @@ button {
     font-size: 26px;
 }
 
+/* busy-state spinner (KlippyGtk Button_busy) is tiny by default */
+.glance-action spinner {
+    min-width: 44px;
+    min-height: 44px;
+}
+
 .glance-step {
     min-height: 52px;
     min-width: 56px;

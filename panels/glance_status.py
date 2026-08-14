@@ -78,8 +78,15 @@ class Panel(ScreenPanel):
         self.flow_row, self.flow_val = self._factor_row(_("Flow"), self.adjust_flow)
         # paused-state replacements for the factor rows (same footprint):
         # quick inline extrude/retract, and a door into the full extrude panel
-        self.ext_row, self.ext_val = self._factor_row(_("Extrude"), self.adjust_extrude)
-        self.ext_val.set_label("10mm")
+        self.btn_unload = Gtk.Button(label=_("Unload"))
+        self.btn_load = Gtk.Button(label=_("Load"))
+        self.ext_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        for b in (self.btn_unload, self.btn_load):
+            b.get_style_context().add_class("glance-action")
+            b.set_hexpand(False)
+            self.ext_row.pack_start(b, True, True, 0)
+        self.btn_unload.connect("clicked", self.filament_action, "UNLOAD_FILAMENT")
+        self.btn_load.connect("clicked", self.filament_action, "LOAD_FILAMENT")
         self.ext_more = Gtk.Button(label=_("Filament / extrude panel"))
         self.ext_more.get_style_context().add_class("glance-action")
         self.ext_more.set_hexpand(False)
@@ -202,7 +209,7 @@ class Panel(ScreenPanel):
             for c in PHASE_CLASSES:
                 ctx.remove_class(c)
             ctx.add_class(cls)
-        for row in (self.noz_row, self.bed_row, self.speed_row, self.flow_row, self.ext_row):
+        for row in (self.noz_row, self.bed_row, self.speed_row, self.flow_row):
             ctx = row.get_style_context()
             for c in PHASE_CLASSES:
                 ctx.remove_class(c)
@@ -476,9 +483,9 @@ class Panel(ScreenPanel):
 
     # ---- actions ------------------------------------------------------------
 
-    def adjust_extrude(self, widget, direction):
-        # 10mm at 5mm/s; Klipper refuses below min_extrude_temp with a popup
-        self._screen._ws.klippy.gcode_script(f"M83\nG1 E{10 * direction} F300")
+    def filament_action(self, widget, macro):
+        # gcode runs immediately while paused (queue is idle between file lines)
+        self._screen._ws.klippy.gcode_script(macro)
 
     def open_extrude(self, widget):
         self._screen.show_panel("extrude")
@@ -514,7 +521,16 @@ class Panel(ScreenPanel):
         if response_id != Gtk.ResponseType.OK:
             return
         self.btn_stop.set_sensitive(False)
-        self._screen._ws.klippy.print_cancel()
+        if self.phase in ("heat", "cool", "prep"):
+            # PRINT_START holds the gcode queue through its heat waits and
+            # leveling, so a queued CANCEL_PRINT would only act minutes later,
+            # after the print visibly starts. The firmware-restart API bypasses
+            # the queue (same escape hatch as Mainsail's firmware restart) and
+            # kills the job immediately; heaters turn off with it.
+            self._screen._ws.klippy.restart_firmware()
+            self.set_job_state("cancelled")
+        else:
+            self._screen._ws.klippy.print_cancel()
 
     def open_details(self, widget):
         self._screen.show_panel("job_status")
