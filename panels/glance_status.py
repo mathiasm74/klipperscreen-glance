@@ -115,8 +115,10 @@ class Panel(ScreenPanel):
         self.root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.root.get_style_context().add_class("glance-root")
         self.root.pack_start(main, True, True, 0)
-        self.root.pack_end(self.rail, False, False, 0)
-        self.content.add(self.root)
+        # the rail lives OUTSIDE the bordered box: the side keylines terminate
+        # into it, so the rail itself closes the frame (as in the mockup)
+        self.content.pack_start(self.root, True, True, 0)
+        self.content.pack_end(self.rail, False, False, 0)
 
     @staticmethod
     def _temp_row(name):
