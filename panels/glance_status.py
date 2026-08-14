@@ -82,13 +82,13 @@ class Panel(ScreenPanel):
         self.btn_load = Gtk.Button(label=_("Load"))
         self.ext_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         for b in (self.btn_unload, self.btn_load):
-            b.get_style_context().add_class("glance-action")
+            b.get_style_context().add_class("glance-row-btn")
             b.set_hexpand(False)
             self.ext_row.pack_start(b, True, True, 0)
         self.btn_unload.connect("clicked", self.filament_action, "UNLOAD_FILAMENT")
         self.btn_load.connect("clicked", self.filament_action, "LOAD_FILAMENT")
         self.ext_more = Gtk.Button(label=_("Filament / extrude panel"))
-        self.ext_more.get_style_context().add_class("glance-action")
+        self.ext_more.get_style_context().add_class("glance-row-btn")
         self.ext_more.set_hexpand(False)
         self.ext_more.connect("clicked", self.open_extrude)
 
@@ -374,7 +374,9 @@ class Panel(ScreenPanel):
         elif state == "paused":
             self.set_phase("pause", _("PAUSED"), "ph-heat")
             self._set_big(_("PAUSED"), word=True)
-            self.sub_lbl.set_label(os.path.splitext(self.filename)[0])
+            # filename is already in the side column; show elapsed time instead
+            dur = float(self._printer.get_stat("print_stats", "print_duration") or 0)
+            self.sub_lbl.set_label(_("elapsed") + f" {self._fmt_short(dur)}")
         elif state == "complete":
             self.set_phase("done", _("COMPLETE"), "ph-done")
             self._set_big(_("DONE"), word=True)

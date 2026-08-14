@@ -133,6 +133,15 @@ button {
     animation: glance-busy-pulse 900ms ease-in-out infinite;
 }
 
+/* paused-mode row buttons: same slot height as the temp rows they replace,
+   so the paused layout can't overflow the screen */
+.glance-row-btn {
+    min-height: 44px;
+    font-size: 24px;
+    margin: 0;
+    padding: 0 8px;
+}
+
 .glance-step {
     min-height: 52px;
     min-width: 56px;
