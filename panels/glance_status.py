@@ -574,6 +574,10 @@ class Panel(ScreenPanel):
             self.pulse_timeout = None
 
     def activate(self):
-        self.thumb_loaded = False
+        # do NOT reset thumb_loaded here: reloading the thumbnail on every
+        # re-attach momentarily collapses the side column's natural size and
+        # reflows the whole layout - the hero visibly jumps. The widget keeps
+        # its pixbuf across panel switches; update_filename resets the flag
+        # when a reload is genuinely needed.
         if self.phase == "prep" and self.pulse_timeout is None:
             self.pulse_timeout = GLib.timeout_add(180, self._pulse)
