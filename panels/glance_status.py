@@ -37,6 +37,7 @@ class Panel(ScreenPanel):
         self.progress = 0.0
         self.msg = ""
         self.pulse_timeout = None
+        self.cool_from = None
         self.thumb_dialog = None
         self.thumb_loaded = False
 
@@ -203,7 +204,6 @@ class Panel(ScreenPanel):
             return
         m = HEAT_RE.search(self.msg) if self.msg else None
         if m:
-            self.set_phase("heat", _("HEATING"), "ph-heat")
             # the M117 only tells us which heater gates and its target; temps and
             # percent are computed live so they stay in sync with the temp column
             name = m.group(2)
@@ -213,16 +213,25 @@ class Panel(ScreenPanel):
             if live is None or isinstance(live, dict):
                 live = float(m.group(3))
             ambient = 25.0
-            if target >= live:
+            if live > target + 1:
+                # overshoot cooldown (e.g. nozzle back down to tap temp): count the
+                # live temp down instead of showing a meaningless percent
+                self.set_phase("cool", _("COOLING"), "ph-heat")
+                if self.cool_from is None or live > self.cool_from:
+                    self.cool_from = live
+                span = max(self.cool_from - target, 1.0)
+                self._set_big(f"{live:.0f}°")
+                self.sub_lbl.set_label(f"{name} → {target:.0f}°")
+                self.rail.set_fraction(min(max((self.cool_from - live) / span, 0.0), 0.99))
+            else:
+                self.cool_from = None
+                self.set_phase("heat", _("HEATING"), "ph-heat")
                 # heating: measure from ambient so a warm start begins at 60-odd %, not 0
                 pct = (live - ambient) / (target - ambient) * 100 if target > ambient + 1 else 99
-            else:
-                # cooling wait: ambient reference is meaningless, use the macro's chunk percent
-                pct = int(m.group(1))
-            pct = min(max(int(pct), 0), 99)
-            self._set_big(f"{pct}%")
-            self.sub_lbl.set_label(f"{name} {live:.0f} / {target:.0f}°")
-            self.rail.set_fraction(pct / 100)  # rail always agrees with the hero number
+                pct = min(max(int(pct), 0), 99)
+                self._set_big(f"{pct}%")
+                self.sub_lbl.set_label(f"{name} {live:.0f} / {target:.0f}°")
+                self.rail.set_fraction(pct / 100)  # rail always agrees with the hero number
         elif self.msg.startswith("Leveling"):
             self.set_phase("prep", _("PREPARING"), "ph-prep")
             self._set_big(_("LEVELING"), word=True)
