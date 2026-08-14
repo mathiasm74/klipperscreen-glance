@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 # Glance: at-a-glance job status panel for KlipperScreen.
 # One giant phase-colored numeral, a bottom progress rail, the part thumbnail,
-# nozzle/bed readouts and three fixed controls. The stock job_status panel
-# stays available behind the "•••" button for all the detailed knobs.
+# nozzle/bed readouts and three fixed controls. The "•••" button opens a
+# glance-styled details sheet: Z babystepping, live stats, and doors into the
+# stock fine-tune/extrude/settings panels.
 # Phase is derived from print_stats plus the M117 messages this printer's
 # PRINT_START emits (_HEAT_WAIT progress bars, "Leveling gantry",
 # "Scanning bed mesh").
@@ -41,6 +42,8 @@ class Panel(ScreenPanel):
         self.speed_pct = 100
         self.flow_pct = 100
         self._busy_buttons = set()
+        self.sheet = None
+        self.sheet_labels = {}
         self.thumb_dialog = None
         self.thumb_loaded = False
 
@@ -352,6 +355,7 @@ class Panel(ScreenPanel):
                 self.set_job_state(ps["state"], ps.get("message", ""))
         self.refresh_view()
         self._show_buttons()
+        self._update_sheet()
 
     def _update_temps(self):
         for dev, lbl in (("extruder", self.noz_val), ("heater_bed", self.bed_val)):
@@ -592,7 +596,107 @@ class Panel(ScreenPanel):
         return False  # single-shot timeout
 
     def open_details(self, widget):
-        self._screen.show_panel("job_status")
+        # glance-styled details sheet replacing the stock job_status screen:
+        # Z babystepping first (the mid-first-layer tool), live stats, doors
+        # into the stock panels for deep dives
+        self.sheet_labels = {}
+        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        content.set_size_request(int(self._screen.width * 0.72), -1)
+
+        zrow = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
+        zrow.get_style_context().add_class("glance-temp-row")
+        zname = Gtk.Label(label=_("Z offset"), xalign=0, hexpand=True)
+        zname.get_style_context().add_class("glance-temp-name")
+        zval = Gtk.Label(label="+0.000")
+        zval.get_style_context().add_class("glance-temp-val")
+        zval.set_size_request(150, -1)
+        zval.set_hexpand(False)
+        self.sheet_labels["zoff"] = zval
+        zminus = Gtk.Button(label="−.01")
+        zplus = Gtk.Button(label="+.01")
+        for b, d in ((zminus, -0.01), (zplus, 0.01)):
+            b.get_style_context().add_class("glance-step")
+            b.set_hexpand(False)
+            b.connect("clicked", self.adjust_zoffset, d)
+        zrow.pack_start(zname, True, True, 0)
+        zrow.pack_end(zplus, False, False, 0)
+        zrow.pack_end(zval, False, False, 0)
+        zrow.pack_end(zminus, False, False, 0)
+        content.pack_start(zrow, False, False, 0)
+
+        grid = Gtk.Grid(column_homogeneous=True, row_spacing=8, column_spacing=28)
+        stats = [("layer", _("Layer")), ("z", "Z"), ("fila", _("Filament")),
+                 ("flow", _("Flow")), ("fan", _("Fan")), ("vel", _("Velocity"))]
+        for i, (key, name) in enumerate(stats):
+            cell = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+            n = Gtk.Label(label=name, xalign=0, hexpand=True)
+            n.get_style_context().add_class("glance-temp-name")
+            v = Gtk.Label(label="—", xalign=1)
+            v.get_style_context().add_class("glance-temp-val")
+            self.sheet_labels[key] = v
+            cell.pack_start(n, True, True, 0)
+            cell.pack_end(v, False, False, 0)
+            grid.attach(cell, i % 2, i // 2, 1, 1)
+        content.pack_start(grid, False, False, 0)
+
+        doors = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        for name, target in ((_("Fine tuning"), "fine_tune"), (_("Extrude"), "extrude")):
+            b = Gtk.Button(label=name)
+            b.get_style_context().add_class("glance-row-btn")
+            b.connect("clicked", self.sheet_door, target)
+            doors.pack_start(b, True, True, 0)
+        settings = Gtk.Button(label=_("Settings"))
+        settings.get_style_context().add_class("glance-row-btn")
+        settings.connect("clicked", self.sheet_settings)
+        doors.pack_start(settings, True, True, 0)
+        content.pack_start(doors, False, False, 0)
+
+        buttons = [{"name": _("Close"), "response": Gtk.ResponseType.CANCEL}]
+        self.sheet = self._gtk.Dialog(_("Details"), buttons, content, self.close_sheet)
+        self._update_sheet()
+
+    def close_sheet(self, dialog=None, response_id=None):
+        self._gtk.remove_dialog(dialog)
+        self.sheet = None
+
+    def sheet_door(self, widget, target):
+        self.close_sheet(self.sheet)
+        self._screen.show_panel(target)
+
+    def sheet_settings(self, widget):
+        self.close_sheet(self.sheet)
+        self._screen._go_to_submenu(widget, "")
+
+    def adjust_zoffset(self, widget, delta):
+        self._screen._ws.klippy.gcode_script(f"SET_GCODE_OFFSET Z_ADJUST={delta:+.3f} MOVE=1")
+
+    def _update_sheet(self):
+        if self.sheet is None:
+            return
+        gs = self._printer.get_stat
+        offset = gs("gcode_move", "homing_origin")
+        if offset:
+            self.sheet_labels["zoff"].set_label(f"{float(offset[2]):+.3f}")
+        pos = gs("gcode_move", "gcode_position")
+        if pos:
+            self.sheet_labels["z"].set_label(f"{float(pos[2]):.2f} mm")
+        info = gs("print_stats", "info") or {}
+        cur, tot = info.get("current_layer"), info.get("total_layer")
+        self.sheet_labels["layer"].set_label(
+            f"{cur} / {tot}" if cur is not None and tot else "—")
+        used = gs("print_stats", "filament_used")
+        if used is not None and not isinstance(used, dict):
+            self.sheet_labels["fila"].set_label(f"{float(used) / 1000:.1f} m")
+        ev = gs("motion_report", "live_extruder_velocity")
+        if ev is not None and not isinstance(ev, dict):
+            # 1.75mm filament cross-section
+            self.sheet_labels["flow"].set_label(f"{2.405 * float(ev):.1f} mm³/s")
+        v = gs("motion_report", "live_velocity")
+        if v is not None and not isinstance(v, dict):
+            self.sheet_labels["vel"].set_label(f"{float(v):.0f} mm/s")
+        fan = self._printer.get_fan_speed("fan")
+        if fan is not None:
+            self.sheet_labels["fan"].set_label(f"{float(fan) * 100:.0f}%")
 
     def close_panel(self, widget=None):
         self._screen.state_ready(wait=False)
