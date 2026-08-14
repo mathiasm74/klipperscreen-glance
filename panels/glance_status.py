@@ -195,11 +195,25 @@ class Panel(ScreenPanel):
         m = HEAT_RE.search(self.msg) if self.msg else None
         if m:
             self.set_phase("heat", _("HEATING"), "ph-heat")
-            pct = int(m.group(1))
+            # the M117 only tells us which heater gates and its target; temps and
+            # percent are computed live so they stay in sync with the temp column
+            name = m.group(2)
+            dev = "extruder" if name == "Nozzle" else "heater_bed"
+            live = self._printer.get_stat(dev, "temperature")
+            target = float(m.group(4)) if m.group(4) else float(self._printer.get_stat(dev, "target") or 0)
+            if live is None or isinstance(live, dict):
+                live = float(m.group(3))
+            ambient = 25.0
+            if target >= live:
+                # heating: measure from ambient so a warm start begins at 60-odd %, not 0
+                pct = (live - ambient) / (target - ambient) * 100 if target > ambient + 1 else 99
+            else:
+                # cooling wait: ambient reference is meaningless, use the macro's chunk percent
+                pct = int(m.group(1))
+            pct = min(max(int(pct), 0), 99)
             self._set_big(f"{pct}%")
-            target = f" / {m.group(4)}°" if m.group(4) else "°"
-            self.sub_lbl.set_label(f"{m.group(2)} {m.group(3)}{target}")
-            self.rail.set_fraction(pct / 1000)  # heat phase = first 10% of the rail
+            self.sub_lbl.set_label(f"{name} {live:.0f} / {target:.0f}°")
+            self.rail.set_fraction(pct / 100)  # rail always agrees with the hero number
         elif self.msg.startswith("Leveling"):
             self.set_phase("prep", _("PREPARING"), "ph-prep")
             self._set_big(_("LEVELING"), word=True)
