@@ -617,6 +617,7 @@ class Panel(ScreenPanel):
         for b, d in ((zminus, -0.01), (zplus, 0.01)):
             b.get_style_context().add_class("glance-step")
             b.set_hexpand(False)
+            b.set_valign(Gtk.Align.CENTER)  # don't stretch with the dialog row
             b.connect("clicked", self.adjust_zoffset, d)
         zrow.pack_start(zname, True, True, 0)
         zrow.pack_end(zplus, False, False, 0)
@@ -682,6 +683,15 @@ class Panel(ScreenPanel):
             self.sheet_labels["z"].set_label(f"{float(pos[2]):.2f} mm")
         info = gs("print_stats", "info") or {}
         cur, tot = info.get("current_layer"), info.get("total_layer")
+        if (cur is None or not tot) and pos:
+            # Cura doesn't send SET_PRINT_STATS_INFO; derive from Z + metadata
+            lh = self.file_metadata.get("layer_height")
+            flh = self.file_metadata.get("first_layer_height") or lh
+            oh = self.file_metadata.get("object_height")
+            if lh:
+                z = float(pos[2])
+                cur = max(int((z - flh) / lh + 1.5), 1) if z >= flh else 1
+                tot = self.file_metadata.get("layer_count") or                     (max(int((oh - flh) / lh + 1.5), 1) if oh else None)
         self.sheet_labels["layer"].set_label(
             f"{cur} / {tot}" if cur is not None and tot else "—")
         used = gs("print_stats", "filament_used")
