@@ -104,6 +104,15 @@ button {
     font-size: 26px;
 }
 
+/* base.css gives every trough 0.5em margins and a 1px border, which insets
+   the rail inside its widget and breaks the frame junction - zero it all */
+.glance-rail,
+.glance-rail trough,
+.glance-rail progress {
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
 .glance-rail trough {
     min-height: 32px;
     border-radius: 0;
