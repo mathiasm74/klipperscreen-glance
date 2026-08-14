@@ -40,6 +40,7 @@ class Panel(ScreenPanel):
         self.cool_from = None
         self.speed_pct = 100
         self.flow_pct = 100
+        self._busy_buttons = set()
         self.thumb_dialog = None
         self.thumb_loaded = False
 
@@ -248,19 +249,19 @@ class Panel(ScreenPanel):
     def _show_buttons(self):
         job_over = self.state in ("complete", "cancelled", "error", "standby")
         paused = self.state == "paused"
-        for b in (self.btn_pause, self.btn_resume):
-            self._set_busy(b, False)
+        running = self.state == "printing" and self.phase == "print"
         self.btn_pause.set_visible(not paused)
         self.btn_resume.set_visible(paused)
         self.btn_stop.set_visible(not job_over)
         self.btn_close.set_visible(job_over)
         # pause can't act until PRINT_START releases the gcode queue, so
-        # don't offer it before the print phase - cancel is the real option
-        self.btn_pause.set_sensitive(self.state == "printing" and self.phase == "print")
+        # don't offer it before the print phase - cancel is the real option.
+        # busy buttons stay insensitive until their state transition lands.
+        self.btn_pause.set_sensitive(running and self.btn_pause not in self._busy_buttons)
+        self.btn_resume.set_sensitive(paused and self.btn_resume not in self._busy_buttons)
         self.btn_stop.set_sensitive(self.state in ("printing", "paused"))
         # speed/flow only matter while gcode is actually running; during
         # heat/level/mesh/cool the rows just add noise, so hide them
-        running = self.state == "printing" and self.phase == "print"
         temps = not running and not paused
         for w, vis in ((self.noz_row, temps), (self.bed_row, temps),
                        (self.speed_row, running), (self.flow_row, running),
@@ -395,6 +396,9 @@ class Panel(ScreenPanel):
             self._set_big(_("ERROR"), word=True)
             self.sub_lbl.set_label(msg or "")
             self._screen.show_popup_message(msg)
+        # the requested transition arrived (or a new one did): busy is over
+        for b in (self.btn_pause, self.btn_resume):
+            self._set_busy(b, False)
         self.content.show_all()
         self._show_buttons()
 
@@ -525,13 +529,27 @@ class Panel(ScreenPanel):
 
     def _set_busy(self, button, busy):
         # GTK3 won't scale GtkSpinner's drawn animation no matter what the
-        # node's CSS min-size says, so busy-state is a whole-button pulse
+        # node's CSS min-size says, so busy-state is a whole-button pulse.
+        # Busy persists until the job state actually transitions (cleared in
+        # set_job_state); _show_buttons must not touch it, or the every-second
+        # status updates wipe the pulse before it is ever seen.
         ctx = button.get_style_context()
         if busy:
+            self._busy_buttons.add(button)
             button.set_sensitive(False)
             ctx.add_class("glance-busy")
+            GLib.timeout_add_seconds(20, self._busy_failsafe, button)
         else:
+            self._busy_buttons.discard(button)
             ctx.remove_class("glance-busy")
+
+    def _busy_failsafe(self, button):
+        # a pause/resume request that never produced a state change would
+        # otherwise leave the button dead forever
+        if button in self._busy_buttons:
+            self._set_busy(button, False)
+            self._show_buttons()
+        return False
 
     def pause(self, widget):
         self._set_busy(self.btn_pause, True)
