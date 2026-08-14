@@ -32,12 +32,17 @@ button {
    GTK dims insensitive icons on top - net ~15% and invisible on near-black.
    Collapse it to a single dim on the button. */
 .action_bar button:disabled {
-    opacity: 0.65;
+    opacity: 0.9;
+}
+.action_bar button,
+.action_bar image,
+.action_bar button:disabled image,
+.action_bar image:disabled {
+    -gtk-icon-effect: none;
 }
 .action_bar button:disabled image,
 .action_bar image:disabled {
     opacity: 1;
-    -gtk-icon-effect: none;
 }
 
 /* ---- glance job panel ---- */
