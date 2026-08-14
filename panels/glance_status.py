@@ -161,7 +161,7 @@ class Panel(ScreenPanel):
         h, m = seconds // 3600, (seconds % 3600) // 60
         if h > 0:
             return f"{h}h {m:02}m"
-        return f"{m}m" if m > 0 else _("less than a minute")
+        return f"{m}m" if m > 0 else f"{seconds}s"
 
     # ---- phase / view management -------------------------------------------
 
@@ -310,7 +310,8 @@ class Panel(ScreenPanel):
         elif state == "complete":
             self.set_phase("done", _("COMPLETE"), "ph-done")
             self._set_big(_("DONE"), word=True)
-            total = self._printer.get_stat("print_stats", "total_duration") or 0
+            total = (self._printer.get_stat("print_stats", "total_duration")
+                     or self._printer.get_stat("print_stats", "print_duration") or 0)
             self.sub_lbl.set_label(_("finished in") + f" {self._fmt_short(total)}")
             self.rail.set_fraction(1)
             self._add_timeout(self._config.get_main_config().getint("job_complete_timeout", 0))
