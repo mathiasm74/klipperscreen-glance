@@ -45,6 +45,9 @@ class Panel(ScreenPanel):
         self.phase_lbl.get_style_context().add_class("glance-phase")
         self.big_lbl = Gtk.Label(label="—", xalign=0, vexpand=True, valign=Gtk.Align.CENTER)
         self.big_lbl.get_style_context().add_class("glance-big")
+        # digits have different widths in Anton; without ellipsize the label's
+        # natural width changes per digit and nudges the side column around
+        self.big_lbl.set_ellipsize(Pango.EllipsizeMode.END)
         self.sub_lbl = Gtk.Label(label="", xalign=0)
         self.sub_lbl.get_style_context().add_class("glance-subline")
         self.sub_lbl.set_ellipsize(Pango.EllipsizeMode.END)
