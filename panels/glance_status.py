@@ -134,6 +134,15 @@ class Panel(ScreenPanel):
         side.pack_start(self.ext_row, False, False, 0)
         side.pack_start(self.ext_more, False, False, 0)
         side.pack_end(actions, False, False, 0)
+        # attach_panel's show_all() would briefly reveal every row before
+        # _show_buttons hides the wrong ones, reflowing the layout (visible in
+        # slow-mo as the hero jumping). Pre-show the subtrees once, then seal
+        # them so only row-level set_visible controls them.
+        for row in (self.noz_row, self.bed_row, self.speed_row, self.flow_row,
+                    self.ext_row, self.ext_more):
+            row.show_all()
+            row.set_no_show_all(True)
+        self._show_buttons()
 
         main = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, vexpand=True)
         main.pack_start(hero, True, True, 0)
