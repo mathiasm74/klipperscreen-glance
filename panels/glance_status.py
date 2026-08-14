@@ -74,6 +74,14 @@ class Panel(ScreenPanel):
 
         self.speed_row, self.speed_val = self._factor_row(_("Speed"), self.adjust_speed)
         self.flow_row, self.flow_val = self._factor_row(_("Flow"), self.adjust_flow)
+        # paused-state replacements for the factor rows (same footprint):
+        # quick inline extrude/retract, and a door into the full extrude panel
+        self.ext_row, self.ext_val = self._factor_row(_("Extrude"), self.adjust_extrude)
+        self.ext_val.set_label("10mm")
+        self.ext_more = Gtk.Button(label=_("Filament / extrude panel"))
+        self.ext_more.get_style_context().add_class("glance-action")
+        self.ext_more.set_hexpand(False)
+        self.ext_more.connect("clicked", self.open_extrude)
 
         self.btn_pause = self._gtk.Button("pause", None, None, scale=0.9)
         self.btn_resume = self._gtk.Button("resume", None, None, scale=0.9)
@@ -112,6 +120,8 @@ class Panel(ScreenPanel):
         side.pack_start(self.fname_lbl, False, False, 0)
         side.pack_start(self.speed_row, False, False, 0)
         side.pack_start(self.flow_row, False, False, 0)
+        side.pack_start(self.ext_row, False, False, 0)
+        side.pack_start(self.ext_more, False, False, 0)
         side.pack_end(actions, False, False, 0)
 
         main = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, vexpand=True)
@@ -211,6 +221,9 @@ class Panel(ScreenPanel):
         self.btn_close.set_visible(job_over)
         self.btn_pause.set_sensitive(self.state == "printing")
         self.btn_stop.set_sensitive(self.state in ("printing", "paused"))
+        for w, vis in ((self.speed_row, not paused), (self.flow_row, not paused),
+                       (self.ext_row, paused), (self.ext_more, paused)):
+            w.set_visible(vis)
 
     def refresh_view(self):
         if self.state != "printing":
@@ -294,6 +307,7 @@ class Panel(ScreenPanel):
             if "state" in ps:
                 self.set_job_state(ps["state"], ps.get("message", ""))
         self.refresh_view()
+        self._show_buttons()
 
     def set_job_state(self, state, msg=""):
         if state == self.state:
@@ -427,6 +441,13 @@ class Panel(ScreenPanel):
         self.thumb_dialog = None
 
     # ---- actions ------------------------------------------------------------
+
+    def adjust_extrude(self, widget, direction):
+        # 10mm at 5mm/s; Klipper refuses below min_extrude_temp with a popup
+        self._screen._ws.klippy.gcode_script(f"M83\nG1 E{10 * direction} F300")
+
+    def open_extrude(self, widget):
+        self._screen.show_panel("extrude")
 
     def adjust_speed(self, widget, direction):
         self.speed_pct = min(max(self.speed_pct + 5 * direction, 10), 300)
