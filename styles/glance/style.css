@@ -27,13 +27,16 @@ button {
     border-radius: 10px;
 }
 
-/* disabled sidebar buttons stack two dim effects (action-bar opacity and
-   GTK's icon dim) and vanish on the near-black theme; keep them clearly
-   visible, just obviously inactive */
+/* disabled sidebar buttons stack THREE dim effects: base.css puts opacity
+   on the button AND (via ".action_bar :disabled") on its image child, and
+   GTK dims insensitive icons on top - net ~15% and invisible on near-black.
+   Collapse it to a single dim on the button. */
 .action_bar button:disabled {
-    opacity: 0.7;
+    opacity: 0.65;
 }
-.action_bar button:disabled image {
+.action_bar button:disabled image,
+.action_bar image:disabled {
+    opacity: 1;
     -gtk-icon-effect: none;
 }
 
