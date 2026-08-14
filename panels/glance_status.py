@@ -421,7 +421,6 @@ class Panel(ScreenPanel):
             ) / (weight_ref + weight_file)
 
         if estimated > 1:
-            progress = min(max(print_duration / estimated, 0), 1)
             remaining = max(estimated - print_duration, 0)
             if remaining < 60:
                 # no ETA clock here: the full line overflows and shifts the layout
@@ -433,9 +432,13 @@ class Panel(ScreenPanel):
                 )
         else:
             self.sub_lbl.set_label(_("elapsed") + f" {self._fmt_short(print_duration)}")
-        self.progress = progress
-        self._set_big(f"{trunc(progress * 100)}%")
-        self.rail.set_fraction(progress)
+        # hero and rail track FILE progress, not elapsed/estimated time: file
+        # position is monotonic and reaches 100 exactly when the job ends,
+        # while a time-based percent overruns whenever a speed-factor change
+        # (or any estimate error) makes the estimate shorter than reality
+        self.progress = min(max(progress, 0), 1)
+        self._set_big(f"{trunc(self.progress * 100)}%")
+        self.rail.set_fraction(self.progress)
 
     # ---- file / thumbnail ---------------------------------------------------
 
