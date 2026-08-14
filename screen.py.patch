@@ -1,0 +1,18 @@
+diff --git a/screen.py b/screen.py
+index 22f3498d..5f0e59bc 100755
+--- a/screen.py
++++ b/screen.py
+@@ -781,11 +781,11 @@ class KlipperScreen(Gtk.Window):
+             self.show_panel("extrude")
+ 
+     def state_printing(self):
+-        self.show_panel("job_status", remove_all=True)
++        self.show_panel("glance_status", remove_all=True)
+ 
+     def state_ready(self, wait=True):
+         # Do not return to main menu if completing a job, timeouts/user input will return
+-        if "job_status" in self._cur_panels and wait:
++        if ("job_status" in self._cur_panels or "glance_status" in self._cur_panels) and wait:
+             return
+         if not self.initialized:
+             logging.debug("Printer not initialized yet")
