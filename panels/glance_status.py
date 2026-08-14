@@ -503,7 +503,7 @@ class Panel(ScreenPanel):
         self._screen._ws.klippy.gcode_script(f"M220 S{self.speed_pct}")
 
     def adjust_flow(self, widget, direction):
-        self.flow_pct = min(max(self.flow_pct + 2 * direction, 50), 200)
+        self.flow_pct = min(max(self.flow_pct + 1 * direction, 50), 200)
         self.flow_val.set_label(f"{self.flow_pct}%")
         self._screen._ws.klippy.gcode_script(f"M221 S{self.flow_pct}")
 
