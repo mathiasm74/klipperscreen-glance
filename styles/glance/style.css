@@ -1,0 +1,121 @@
+/* Glance — at-a-glance phase-colored theme for KlipperScreen.
+   Pairs with panels/glance_status.py; the phase classes (ph-*) are swapped
+   at runtime by the panel. Loaded after base.css, so @define-color overrides
+   restyle every stock panel to the same dark language. */
+
+@define-color bg #0b0d10;
+@define-color active #23252b;
+@define-color text #e8eaed;
+@define-color glance-dim #7b7d86;
+
+@define-color ph-heat #ffb000;
+@define-color ph-prep #33c5e8;
+@define-color ph-print #3fd968;
+@define-color ph-done #a98bf5;
+@define-color ph-err #e5484d;
+
+* {
+    font-family: "Space Grotesk", sans-serif;
+}
+
+window {
+    background-color: @bg;
+}
+
+button {
+    background-color: #16181d;
+    border-radius: 10px;
+}
+
+/* ---- glance job panel ---- */
+
+.glance-root {
+    border-top: 5px solid @glance-dim;
+    border-left: 5px solid @glance-dim;
+    border-right: 5px solid @glance-dim;
+}
+.glance-root.ph-heat  { border-color: @ph-heat; }
+.glance-root.ph-prep  { border-color: @ph-prep; }
+.glance-root.ph-print { border-color: @ph-print; }
+.glance-root.ph-done  { border-color: @ph-done; }
+.glance-root.ph-err   { border-color: @ph-err; }
+
+.glance-hero {
+    padding: 8px 10px 4px 30px;
+}
+
+.glance-phase {
+    font-size: 26px;
+    color: @glance-dim;
+}
+
+.glance-big {
+    font-family: "Anton";
+    font-size: 160px;
+    color: @text;
+}
+.glance-big.glance-word { font-size: 88px; }
+.glance-big.ph-heat  { color: @ph-heat; }
+.glance-big.ph-prep  { color: @ph-prep; }
+.glance-big.ph-print { color: @ph-print; }
+.glance-big.ph-done  { color: @ph-done; }
+.glance-big.ph-err   { color: @ph-err; }
+
+.glance-subline {
+    font-size: 26px;
+    margin-bottom: 6px;
+    color: #d7d9de;
+}
+
+.glance-side {
+    padding: 10px 16px 8px 6px;
+}
+
+.glance-thumb {
+    background-color: #111318;
+    border-radius: 14px;
+}
+
+.glance-fname {
+    font-size: 20px;
+    color: @glance-dim;
+}
+
+.glance-temp-name {
+    font-size: 24px;
+    color: @glance-dim;
+}
+.glance-temp-val {
+    font-size: 30px;
+    color: @text;
+}
+.glance-temp-row {
+    border-bottom: 3px solid #23252b;
+    padding: 4px 2px;
+}
+.glance-temp-row.ph-heat  { border-bottom-color: @ph-heat; }
+.glance-temp-row.ph-prep  { border-bottom-color: @ph-prep; }
+.glance-temp-row.ph-print { border-bottom-color: @ph-print; }
+.glance-temp-row.ph-done  { border-bottom-color: @ph-done; }
+.glance-temp-row.ph-err   { border-bottom-color: @ph-err; }
+
+.glance-action {
+    min-height: 68px;
+    font-size: 26px;
+}
+
+.glance-rail trough {
+    min-height: 32px;
+    border-radius: 0;
+    background-color: #1a1d22;
+}
+.glance-rail progress {
+    min-height: 32px;
+    border-radius: 0;
+    background-color: @glance-dim;
+}
+.glance-rail.ph-heat  progress { background-color: @ph-heat; }
+.glance-rail.ph-prep  progress { background-color: @ph-prep; }
+.glance-rail.ph-print progress { background-color: @ph-print; }
+.glance-rail.ph-done  progress { background-color: @ph-done; }
+.glance-rail.ph-err   progress { background-color: @ph-err; }
