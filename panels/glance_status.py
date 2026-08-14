@@ -315,10 +315,14 @@ class Panel(ScreenPanel):
         if estimated > 1:
             progress = min(max(print_duration / estimated, 0), 1)
             remaining = max(estimated - print_duration, 0)
-            eta = (datetime.now() + timedelta(seconds=remaining)).strftime("%H:%M")
-            self.sub_lbl.set_label(
-                f"{self._fmt_short(remaining)} " + _("left") + f"  ·  " + _("done") + f" {eta}"
-            )
+            if remaining < 60:
+                # no ETA clock here: the full line overflows and shifts the layout
+                self.sub_lbl.set_label(_("less than a minute left"))
+            else:
+                eta = (datetime.now() + timedelta(seconds=remaining)).strftime("%H:%M")
+                self.sub_lbl.set_label(
+                    f"{self._fmt_short(remaining)} " + _("left") + "  ·  " + _("done") + f" {eta}"
+                )
         else:
             self.sub_lbl.set_label(_("elapsed") + f" {self._fmt_short(print_duration)}")
         self.progress = progress
@@ -358,6 +362,9 @@ class Panel(ScreenPanel):
             height = self._screen.height * 0.34
         pixbuf = self.get_file_image(self.filename, width, height)
         if pixbuf is None:
+            # no thumbnail for this file: don't keep showing the previous print's part
+            if image := find_widget(self.thumb_btn, Gtk.Image):
+                image.clear()
             return
         if image := find_widget(self.thumb_btn, Gtk.Image):
             image.set_from_pixbuf(pixbuf)
