@@ -72,6 +72,8 @@ class Panel(ScreenPanel):
         self.fname_lbl.get_style_context().add_class("glance-fname")
         self.fname_lbl.set_ellipsize(Pango.EllipsizeMode.MIDDLE)
 
+        self.noz_row, self.noz_val = self._temp_row(_("Nozzle"))
+        self.bed_row, self.bed_val = self._temp_row(_("Bed"))
         self.speed_row, self.speed_val = self._factor_row(_("Speed"), self.adjust_speed)
         self.flow_row, self.flow_val = self._factor_row(_("Flow"), self.adjust_flow)
         # paused-state replacements for the factor rows (same footprint):
@@ -118,6 +120,8 @@ class Panel(ScreenPanel):
         side.set_hexpand(False)
         side.pack_start(self.thumb_btn, True, True, 0)
         side.pack_start(self.fname_lbl, False, False, 0)
+        side.pack_start(self.noz_row, False, False, 0)
+        side.pack_start(self.bed_row, False, False, 0)
         side.pack_start(self.speed_row, False, False, 0)
         side.pack_start(self.flow_row, False, False, 0)
         side.pack_start(self.ext_row, False, False, 0)
@@ -141,6 +145,19 @@ class Panel(ScreenPanel):
         # into it, so the rail itself closes the frame (as in the mockup)
         self.content.pack_start(self.root, True, True, 0)
         self.content.pack_end(self.rail, False, False, 0)
+
+    @staticmethod
+    def _temp_row(name):
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        row.get_style_context().add_class("glance-temp-row")
+        name_lbl = Gtk.Label(label=name, xalign=0, hexpand=True)
+        name_lbl.get_style_context().add_class("glance-temp-name")
+        val_lbl = Gtk.Label(label="—", xalign=1)
+        val_lbl.get_style_context().add_class("glance-temp-val")
+        val_lbl.set_hexpand(False)
+        row.pack_start(name_lbl, True, True, 0)
+        row.pack_end(val_lbl, False, False, 0)
+        return row, val_lbl
 
     def _factor_row(self, name, adjust_cb):
         row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
@@ -185,7 +202,7 @@ class Panel(ScreenPanel):
             for c in PHASE_CLASSES:
                 ctx.remove_class(c)
             ctx.add_class(cls)
-        for row in (self.speed_row, self.flow_row):
+        for row in (self.noz_row, self.bed_row, self.speed_row, self.flow_row, self.ext_row):
             ctx = row.get_style_context()
             for c in PHASE_CLASSES:
                 ctx.remove_class(c)
@@ -224,7 +241,9 @@ class Panel(ScreenPanel):
         # speed/flow only matter while gcode is actually running; during
         # heat/level/mesh/cool the rows just add noise, so hide them
         running = self.state == "printing" and self.phase == "print"
-        for w, vis in ((self.speed_row, running), (self.flow_row, running),
+        temps = not running and not paused
+        for w, vis in ((self.noz_row, temps), (self.bed_row, temps),
+                       (self.speed_row, running), (self.flow_row, running),
                        (self.ext_row, paused), (self.ext_more, paused)):
             w.set_visible(vis)
 
@@ -293,6 +312,7 @@ class Panel(ScreenPanel):
         if action != "notify_status_update":
             return
 
+        self._update_temps()
         if "gcode_move" in data:
             gm = data["gcode_move"]
             if "speed_factor" in gm:
@@ -311,6 +331,17 @@ class Panel(ScreenPanel):
                 self.set_job_state(ps["state"], ps.get("message", ""))
         self.refresh_view()
         self._show_buttons()
+
+    def _update_temps(self):
+        for dev, lbl in (("extruder", self.noz_val), ("heater_bed", self.bed_val)):
+            temp = self._printer.get_stat(dev, "temperature")
+            target = self._printer.get_stat(dev, "target")
+            if temp is None or isinstance(temp, dict):
+                continue
+            text = f"{temp:.0f}°"
+            if target:
+                text += f" / {target:.0f}°"
+            lbl.set_label(text)
 
     def set_job_state(self, state, msg=""):
         if state == self.state:
