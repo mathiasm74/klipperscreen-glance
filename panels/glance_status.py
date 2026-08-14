@@ -61,7 +61,7 @@ class Panel(ScreenPanel):
         # side column
         self.thumb_btn = self._gtk.Button("file")
         self.thumb_btn.get_style_context().add_class("glance-thumb")
-        self.thumb_btn.set_hexpand(True)
+        self.thumb_btn.set_hexpand(False)
         self.thumb_btn.set_vexpand(True)
         self.thumb_btn.connect("clicked", self.show_fullscreen_thumbnail)
 
@@ -101,6 +101,10 @@ class Panel(ScreenPanel):
         side = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         side.get_style_context().add_class("glance-side")
         side.set_size_request(int(self._screen.width * 0.34), -1)
+        # children with hexpand (buttons) would propagate expand up and get this
+        # column centered in a variable-width cell, wobbling with the hero digits;
+        # explicit hexpand=False stops the propagation so pack_end pins it right
+        side.set_hexpand(False)
         side.pack_start(self.thumb_btn, True, True, 0)
         side.pack_start(self.fname_lbl, False, False, 0)
         side.pack_start(self.noz_row, False, False, 0)
