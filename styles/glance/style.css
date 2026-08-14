@@ -104,6 +104,13 @@ button {
     font-size: 26px;
 }
 
+.glance-step {
+    min-height: 52px;
+    min-width: 56px;
+    font-size: 34px;
+    padding: 0;
+}
+
 /* base.css gives every trough 0.5em margins and a 1px border, which insets
    the rail inside its widget and breaks the frame junction - zero it all */
 .glance-rail,

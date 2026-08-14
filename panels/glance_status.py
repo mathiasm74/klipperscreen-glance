@@ -38,6 +38,8 @@ class Panel(ScreenPanel):
         self.msg = ""
         self.pulse_timeout = None
         self.cool_from = None
+        self.speed_pct = 100
+        self.flow_pct = 100
         self.thumb_dialog = None
         self.thumb_loaded = False
 
@@ -70,8 +72,8 @@ class Panel(ScreenPanel):
         self.fname_lbl.get_style_context().add_class("glance-fname")
         self.fname_lbl.set_ellipsize(Pango.EllipsizeMode.MIDDLE)
 
-        self.noz_row, self.noz_val = self._temp_row(_("Nozzle"))
-        self.bed_row, self.bed_val = self._temp_row(_("Bed"))
+        self.speed_row, self.speed_val = self._factor_row(_("Speed"), self.adjust_speed)
+        self.flow_row, self.flow_val = self._factor_row(_("Flow"), self.adjust_flow)
 
         self.btn_pause = self._gtk.Button("pause", None, None, scale=0.9)
         self.btn_resume = self._gtk.Button("resume", None, None, scale=0.9)
@@ -108,8 +110,8 @@ class Panel(ScreenPanel):
         side.set_hexpand(False)
         side.pack_start(self.thumb_btn, True, True, 0)
         side.pack_start(self.fname_lbl, False, False, 0)
-        side.pack_start(self.noz_row, False, False, 0)
-        side.pack_start(self.bed_row, False, False, 0)
+        side.pack_start(self.speed_row, False, False, 0)
+        side.pack_start(self.flow_row, False, False, 0)
         side.pack_end(actions, False, False, 0)
 
         main = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, vexpand=True)
@@ -130,16 +132,27 @@ class Panel(ScreenPanel):
         self.content.pack_start(self.root, True, True, 0)
         self.content.pack_end(self.rail, False, False, 0)
 
-    @staticmethod
-    def _temp_row(name):
-        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+    def _factor_row(self, name, adjust_cb):
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
         row.get_style_context().add_class("glance-temp-row")
         name_lbl = Gtk.Label(label=name, xalign=0, hexpand=True)
         name_lbl.get_style_context().add_class("glance-temp-name")
-        val_lbl = Gtk.Label(label="—", xalign=1)
+        val_lbl = Gtk.Label(label="100%")
         val_lbl.get_style_context().add_class("glance-temp-val")
+        # fixed width so changing digit counts can't nudge the buttons around
+        val_lbl.set_size_request(96, -1)
+        minus = Gtk.Button(label="−")
+        plus = Gtk.Button(label="+")
+        for w in (minus, plus, val_lbl):
+            w.set_hexpand(False)  # never let expand propagate (column wobble)
+        for b in (minus, plus):
+            b.get_style_context().add_class("glance-step")
+        minus.connect("clicked", adjust_cb, -1)
+        plus.connect("clicked", adjust_cb, +1)
         row.pack_start(name_lbl, True, True, 0)
+        row.pack_end(plus, False, False, 0)
         row.pack_end(val_lbl, False, False, 0)
+        row.pack_end(minus, False, False, 0)
         return row, val_lbl
 
     @staticmethod
@@ -162,7 +175,7 @@ class Panel(ScreenPanel):
             for c in PHASE_CLASSES:
                 ctx.remove_class(c)
             ctx.add_class(cls)
-        for row in (self.noz_row, self.bed_row):
+        for row in (self.speed_row, self.flow_row):
             ctx = row.get_style_context()
             for c in PHASE_CLASSES:
                 ctx.remove_class(c)
@@ -264,7 +277,14 @@ class Panel(ScreenPanel):
         if action != "notify_status_update":
             return
 
-        self._update_temps()
+        if "gcode_move" in data:
+            gm = data["gcode_move"]
+            if "speed_factor" in gm:
+                self.speed_pct = round(float(gm["speed_factor"]) * 100)
+                self.speed_val.set_label(f"{self.speed_pct}%")
+            if "extrude_factor" in gm:
+                self.flow_pct = round(float(gm["extrude_factor"]) * 100)
+                self.flow_val.set_label(f"{self.flow_pct}%")
         if "display_status" in data and "message" in data["display_status"]:
             self.msg = data["display_status"]["message"] or ""
         if "print_stats" in data:
@@ -274,17 +294,6 @@ class Panel(ScreenPanel):
             if "state" in ps:
                 self.set_job_state(ps["state"], ps.get("message", ""))
         self.refresh_view()
-
-    def _update_temps(self):
-        for dev, lbl in (("extruder", self.noz_val), ("heater_bed", self.bed_val)):
-            temp = self._printer.get_stat(dev, "temperature")
-            target = self._printer.get_stat(dev, "target")
-            if temp is None or isinstance(temp, dict):
-                continue
-            text = f"{temp:.0f}°"
-            if target:
-                text += f" / {target:.0f}°"
-            lbl.set_label(text)
 
     def set_job_state(self, state, msg=""):
         if state == self.state:
@@ -417,6 +426,16 @@ class Panel(ScreenPanel):
         self.thumb_dialog = None
 
     # ---- actions ------------------------------------------------------------
+
+    def adjust_speed(self, widget, direction):
+        self.speed_pct = min(max(self.speed_pct + 5 * direction, 10), 300)
+        self.speed_val.set_label(f"{self.speed_pct}%")
+        self._screen._ws.klippy.gcode_script(f"M220 S{self.speed_pct}")
+
+    def adjust_flow(self, widget, direction):
+        self.flow_pct = min(max(self.flow_pct + 2 * direction, 50), 200)
+        self.flow_val.set_label(f"{self.flow_pct}%")
+        self._screen._ws.klippy.gcode_script(f"M221 S{self.flow_pct}")
 
     def pause(self, widget):
         self.btn_pause.set_sensitive(False)
