@@ -221,7 +221,10 @@ class Panel(ScreenPanel):
         self.btn_close.set_visible(job_over)
         self.btn_pause.set_sensitive(self.state == "printing")
         self.btn_stop.set_sensitive(self.state in ("printing", "paused"))
-        for w, vis in ((self.speed_row, not paused), (self.flow_row, not paused),
+        # speed/flow only matter while gcode is actually running; during
+        # heat/level/mesh/cool the rows just add noise, so hide them
+        running = self.state == "printing" and self.phase == "print"
+        for w, vis in ((self.speed_row, running), (self.flow_row, running),
                        (self.ext_row, paused), (self.ext_more, paused)):
             w.set_visible(vis)
 
