@@ -109,7 +109,9 @@ class Panel(ScreenPanel):
 
         main = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, vexpand=True)
         main.pack_start(hero, True, True, 0)
-        main.pack_start(side, False, False, 0)
+        # pack_end anchors the side column to the right edge; packed after the
+        # hero it rides the hero label's natural width, which changes per digit
+        main.pack_end(side, False, False, 0)
 
         self.rail = Gtk.ProgressBar(hexpand=True)
         self.rail.get_style_context().add_class("glance-rail")
