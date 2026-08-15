@@ -347,7 +347,7 @@ class Panel(ScreenPanel):
                 self.set_job_state("paused")
             elif "action:resumed" in data:
                 self.set_job_state("printing")
-            elif "probe at" in data and self.phase == "prep":
+            elif ("probe: at" in data or "probe at" in data) and self.phase == "prep":
                 # QGL probes 4 corners per pass, retrying until in tolerance
                 self.probe_count += 1
                 self.refresh_view()
