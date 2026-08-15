@@ -180,3 +180,14 @@ button {
 .glance-rail.ph-print progress { background-color: @ph-print; }
 .glance-rail.ph-done  progress { background-color: @ph-done; }
 .glance-rail.ph-err   progress { background-color: @ph-err; }
+
+/* details sheet modal */
+.glance-backdrop {
+    background-color: rgba(4, 6, 9, 0.72);
+}
+.glance-sheet {
+    background-color: #12151b;
+    border: 2px solid #2a2e36;
+    border-radius: 18px;
+    padding: 24px 28px;
+}

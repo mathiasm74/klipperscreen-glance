@@ -42,7 +42,6 @@ class Panel(ScreenPanel):
         self.speed_pct = 100
         self.flow_pct = 100
         self._busy_buttons = set()
-        self.sheet = None
         self.sheet_labels = {}
         self.thumb_dialog = None
         self.thumb_loaded = False
@@ -163,8 +162,14 @@ class Panel(ScreenPanel):
         self.root.pack_start(main, True, True, 0)
         # the rail lives OUTSIDE the bordered box: the side keylines terminate
         # into it, so the rail itself closes the frame (as in the mockup)
-        self.content.pack_start(self.root, True, True, 0)
-        self.content.pack_end(self.rail, False, False, 0)
+        inner = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        inner.pack_start(self.root, True, True, 0)
+        inner.pack_end(self.rail, False, False, 0)
+        self.overlay = Gtk.Overlay()
+        self.overlay.add(inner)
+        self.backdrop = self._build_sheet()
+        self.overlay.add_overlay(self.backdrop)
+        self.content.pack_start(self.overlay, True, True, 0)
 
     @staticmethod
     def _temp_row(name):
@@ -595,13 +600,20 @@ class Panel(ScreenPanel):
         self._screen._ws.klippy.restart_firmware()
         return False  # single-shot timeout
 
-    def open_details(self, widget):
-        # glance-styled details sheet replacing the stock job_status screen:
-        # Z babystepping first (the mid-first-layer tool), live stats, doors
-        # into the stock panels for deep dives
-        self.sheet_labels = {}
-        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
-        content.set_size_request(int(self._screen.width * 0.72), -1)
+    def _build_sheet(self):
+        # a real modal: dimmed backdrop over the whole panel, bordered card
+        # centered on it. Tap outside the card (or Close) to dismiss.
+        backdrop = Gtk.EventBox()
+        backdrop.get_style_context().add_class("glance-backdrop")
+        backdrop.connect("button-release-event", self.close_sheet)
+        card = Gtk.EventBox()
+        card.connect("button-release-event", lambda w, e: True)  # eat card taps
+        card.set_halign(Gtk.Align.CENTER)
+        card.set_valign(Gtk.Align.CENTER)
+        card.set_size_request(int(self._screen.width * 0.66), -1)
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        box.get_style_context().add_class("glance-sheet")
+        card.add(box)
 
         zrow = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
         zrow.get_style_context().add_class("glance-temp-row")
@@ -617,15 +629,15 @@ class Panel(ScreenPanel):
         for b, d in ((zminus, -0.01), (zplus, 0.01)):
             b.get_style_context().add_class("glance-step")
             b.set_hexpand(False)
-            b.set_valign(Gtk.Align.CENTER)  # don't stretch with the dialog row
+            b.set_valign(Gtk.Align.CENTER)
             b.connect("clicked", self.adjust_zoffset, d)
         zrow.pack_start(zname, True, True, 0)
         zrow.pack_end(zplus, False, False, 0)
         zrow.pack_end(zval, False, False, 0)
         zrow.pack_end(zminus, False, False, 0)
-        content.pack_start(zrow, False, False, 0)
+        box.pack_start(zrow, False, False, 0)
 
-        grid = Gtk.Grid(column_homogeneous=True, row_spacing=8, column_spacing=28)
+        grid = Gtk.Grid(column_homogeneous=True, row_spacing=10, column_spacing=32)
         stats = [("layer", _("Layer")), ("z", "Z"), ("fila", _("Filament")),
                  ("flow", _("Flow")), ("fan", _("Fan")), ("vel", _("Velocity"))]
         for i, (key, name) in enumerate(stats):
@@ -638,41 +650,42 @@ class Panel(ScreenPanel):
             cell.pack_start(n, True, True, 0)
             cell.pack_end(v, False, False, 0)
             grid.attach(cell, i % 2, i // 2, 1, 1)
-        content.pack_start(grid, False, False, 0)
+        box.pack_start(grid, False, False, 0)
 
-        doors = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        for name, target in ((_("Fine tuning"), "fine_tune"), (_("Extrude"), "extrude")):
-            b = Gtk.Button(label=name)
-            b.get_style_context().add_class("glance-row-btn")
-            b.connect("clicked", self.sheet_door, target)
-            doors.pack_start(b, True, True, 0)
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         settings = Gtk.Button(label=_("Settings"))
-        settings.get_style_context().add_class("glance-row-btn")
         settings.connect("clicked", self.sheet_settings)
-        doors.pack_start(settings, True, True, 0)
-        content.pack_start(doors, False, False, 0)
+        close = Gtk.Button(label=_("Close"))
+        close.connect("clicked", self.close_sheet)
+        for b in (settings, close):
+            b.get_style_context().add_class("glance-row-btn")
+            row.pack_start(b, True, True, 0)
+        box.pack_start(row, False, False, 0)
 
-        buttons = [{"name": _("Close"), "response": Gtk.ResponseType.CANCEL}]
-        self.sheet = self._gtk.Dialog(_("Details"), buttons, content, self.close_sheet)
+        backdrop.add(card)
+        # pre-render then seal, so attach_panel's show_all can't reveal it
+        backdrop.show_all()
+        backdrop.hide()
+        backdrop.set_no_show_all(True)
+        return backdrop
+
+    def open_details(self, widget):
+        self.backdrop.show()
         self._update_sheet()
 
-    def close_sheet(self, dialog=None, response_id=None):
-        self._gtk.remove_dialog(dialog)
-        self.sheet = None
-
-    def sheet_door(self, widget, target):
-        self.close_sheet(self.sheet)
-        self._screen.show_panel(target)
+    def close_sheet(self, widget=None, event=None):
+        self.backdrop.hide()
+        return True
 
     def sheet_settings(self, widget):
-        self.close_sheet(self.sheet)
+        self.close_sheet()
         self._screen._go_to_submenu(widget, "")
 
     def adjust_zoffset(self, widget, delta):
         self._screen._ws.klippy.gcode_script(f"SET_GCODE_OFFSET Z_ADJUST={delta:+.3f} MOVE=1")
 
     def _update_sheet(self):
-        if self.sheet is None:
+        if not self.backdrop.get_visible():
             return
         gs = self._printer.get_stat
         offset = gs("gcode_move", "homing_origin")
@@ -712,6 +725,7 @@ class Panel(ScreenPanel):
         self._screen.state_ready(wait=False)
 
     def deactivate(self):
+        self.backdrop.hide()
         if self.pulse_timeout is not None:
             GLib.source_remove(self.pulse_timeout)
             self.pulse_timeout = None
