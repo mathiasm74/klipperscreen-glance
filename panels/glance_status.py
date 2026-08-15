@@ -39,6 +39,7 @@ class Panel(ScreenPanel):
         self.msg = ""
         self.pulse_timeout = None
         self.cool_from = None
+        self.probe_count = 0
         self.speed_pct = 100
         self.flow_pct = 100
         self._busy_buttons = set()
@@ -234,6 +235,9 @@ class Panel(ScreenPanel):
             for c in PHASE_CLASSES:
                 ctx.remove_class(c)
             ctx.add_class(cls)
+        if phase == "prep":
+            self.probe_count = 0  # fresh count per prep phase (guard above
+            # means this only runs on the transition into prep)
         if phase == "prep" and self.pulse_timeout is None:
             self.pulse_timeout = GLib.timeout_add(180, self._pulse)
         elif phase != "prep" and self.pulse_timeout is not None:
@@ -304,6 +308,7 @@ class Panel(ScreenPanel):
                 self.rail.set_fraction(min(max((self.cool_from - live) / span, 0.0), 0.99))
             else:
                 self.cool_from = None
+        self.probe_count = 0
                 self.set_phase("heat", _("HEATING"), "ph-heat")
                 # heating: measure from ambient so a warm start begins at 60-odd %, not 0
                 pct = (live - ambient) / (target - ambient) * 100 if target > ambient + 1 else 99
@@ -314,7 +319,14 @@ class Panel(ScreenPanel):
         elif self.msg.startswith("Leveling"):
             self.set_phase("prep", _("PREPARING"), "ph-prep")
             self._set_big(_("LEVELING"), word=True)
-            self.sub_lbl.set_label(_("Quad gantry level"))
+            if self.probe_count:
+                pass_n = (self.probe_count - 1) // 4 + 1
+                point = (self.probe_count - 1) % 4 + 1
+                self.sub_lbl.set_label(
+                    _("Quad gantry level") + f"  ·  " + _("pass") + f" {pass_n} · "
+                    + _("probe") + f" {point}/4")
+            else:
+                self.sub_lbl.set_label(_("Quad gantry level"))
         elif self.msg.startswith("Scanning"):
             self.set_phase("prep", _("PREPARING"), "ph-prep")
             self._set_big(_("MESHING"), word=True)
@@ -336,6 +348,10 @@ class Panel(ScreenPanel):
                 self.set_job_state("paused")
             elif "action:resumed" in data:
                 self.set_job_state("printing")
+            elif "probe at" in data and self.phase == "prep":
+                # QGL probes 4 corners per pass, retrying until in tolerance
+                self.probe_count += 1
+                self.refresh_view()
             return
         if action == "notify_metadata_update" and data.get("filename") == self.filename:
             self.get_file_metadata(response=True)
