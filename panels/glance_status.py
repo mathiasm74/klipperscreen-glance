@@ -308,7 +308,6 @@ class Panel(ScreenPanel):
                 self.rail.set_fraction(min(max((self.cool_from - live) / span, 0.0), 0.99))
             else:
                 self.cool_from = None
-        self.probe_count = 0
                 self.set_phase("heat", _("HEATING"), "ph-heat")
                 # heating: measure from ambient so a warm start begins at 60-odd %, not 0
                 pct = (live - ambient) / (target - ambient) * 100 if target > ambient + 1 else 99
