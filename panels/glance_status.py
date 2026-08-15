@@ -734,7 +734,7 @@ class Panel(ScreenPanel):
         ev = gs("motion_report", "live_extruder_velocity")
         if ev is not None and not isinstance(ev, dict):
             # 1.75mm filament cross-section
-            self.sheet_labels["flow"].set_label(f"{2.405 * float(ev):.1f} mm³/s")
+            self.sheet_labels["flow"].set_label(f"{max(2.405 * float(ev), 0):.1f} mm³/s")
         v = gs("motion_report", "live_velocity")
         if v is not None and not isinstance(v, dict):
             self.sheet_labels["vel"].set_label(f"{float(v):.0f} mm/s")
