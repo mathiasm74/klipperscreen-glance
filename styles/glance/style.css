@@ -267,3 +267,10 @@ button.active label {
     font-size: 58px;
     color: #e8eaed;
 }
+
+/* inside sheet cards, the generic sheet-button rule outranks the selected
+   state - reassert the selection fill with higher specificity */
+.glance-sheet .horizontal_togglebuttons_active,
+.glance-sheet .button_active {
+    background-color: #33c5e8;
+}
