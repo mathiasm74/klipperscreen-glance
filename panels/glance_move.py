@@ -70,8 +70,7 @@ class Panel(ScreenPanel):
 
         chips = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         self.z_chips = []
-        for label, z in (("Z 0", 0), ("10", 10), ("50", 50), ("100", 100),
-                         (_("Top"), self.max_z - 10)):
+        for label, z in (("Z 0", 0), ("10", 10), ("50", 50), ("100", 100)):
             c = Gtk.Button(label=label)
             c.get_style_context().add_class("glance-row-btn")
             c.set_hexpand(False)
@@ -80,27 +79,10 @@ class Panel(ScreenPanel):
             self.z_chips.append(c)
         col.pack_start(chips, False, False, 0)
 
-        # XY jog pad
-        pad = Gtk.Grid(row_spacing=6, column_spacing=6, column_homogeneous=True,
-                       row_homogeneous=True)
-        self.step_echo = Gtk.Label(label="1 mm")
-        self.step_echo.get_style_context().add_class("glance-temp-name")
-        arrows = (("↑", 1, 0, "Y", 1), ("←", 0, 1, "X", -1),
-                  ("→", 2, 1, "X", 1), ("↓", 1, 2, "Y", -1))
-        self.jog_btns = []
-        for glyph, gx, gy, axis, sign in arrows:
-            b = Gtk.Button(label=glyph)
-            b.get_style_context().add_class("glance-jog")
-            b.connect("clicked", self.xy_jog, axis, sign)
-            pad.attach(b, gx, gy, 1, 1)
-            self.jog_btns.append(b)
-        pad.attach(self.step_echo, 1, 1, 1, 1)
-        pad.set_halign(Gtk.Align.CENTER)
-        pad.set_vexpand(False)
-        col.pack_start(pad, False, False, 0)
-
+        # (the XY jog cross is gone: the tap-to-move map covers coarse XY and
+        # taps can be as precise as the finger; the step only drives Z jog now)
         self.step_sel = self._segmented([f"{s:g}" for s in STEPS], self.set_step, 1)
-        col.pack_start(self._selrow(_("Step · mm"), self.step_sel), False, False, 0)
+        col.pack_start(self._selrow(_("Z step · mm"), self.step_sel), False, False, 0)
         self.speed_sel = self._segmented([str(s) for s in SPEEDS], self.set_speed, 1)
         col.pack_start(self._selrow(_("Travel · mm/s"), self.speed_sel), False, False, 0)
 
@@ -263,7 +245,6 @@ class Panel(ScreenPanel):
 
     def set_step(self, widget, idx, buttons):
         self.step = STEPS[idx]
-        self.step_echo.set_label(f"{STEPS[idx]:g} mm")
         self._mark_selected(widget, buttons)
 
     def set_speed(self, widget, idx, buttons):
@@ -275,12 +256,6 @@ class Panel(ScreenPanel):
         for b in buttons:
             b.get_style_context().remove_class("horizontal_togglebuttons_active")
         widget.get_style_context().add_class("horizontal_togglebuttons_active")
-
-    def xy_jog(self, widget, axis, sign):
-        if axis.lower() not in self.homed:
-            return
-        self._screen._ws.klippy.gcode_script(
-            f"G91\nG0 {axis}{self.step * sign:g} F{self.speed * 60}\nG90")
 
     def z_jog(self, widget, sign):
         if "z" not in self.homed:
