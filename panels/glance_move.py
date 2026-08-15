@@ -62,7 +62,8 @@ class Panel(ScreenPanel):
         map_wrap.pack_start(note, False, False, 0)
 
         # ---- middle: the Z column ----
-        zcol = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        zcol = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        zcol.get_style_context().add_class("glance-side")  # compact selector sizing
         zcol.set_size_request(206, -1)
         zcol.set_hexpand(False)
 
