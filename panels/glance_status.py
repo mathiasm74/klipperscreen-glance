@@ -505,11 +505,13 @@ class Panel(ScreenPanel):
     def show_file_thumbnail(self):
         if self.thumb_loaded:
             return
-        width = self.thumb_btn.get_allocated_width()
-        height = self.thumb_btn.get_allocated_height()
+        # cap the pixbuf so its minimum size can never ratchet the side
+        # column past the screen height (which shoves the rail off-screen)
+        width = min(self.thumb_btn.get_allocated_width() or 0, self._screen.width * 0.28)
+        height = min(self.thumb_btn.get_allocated_height() or 0, self._screen.height * 0.30)
         if width <= 1 or height <= 1:
             width = self._screen.width * 0.28
-            height = self._screen.height * 0.34
+            height = self._screen.height * 0.30
         pixbuf = self.get_file_image(self.filename, width, height)
         if pixbuf is None:
             # no thumbnail for this file: don't keep showing the previous print's part

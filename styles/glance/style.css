@@ -274,3 +274,10 @@ button.active label {
 .glance-sheet .button_active {
     background-color: #33c5e8;
 }
+
+/* Speed/Flow stepper buttons on the job screen: compact enough that the
+   side column + rail always fit the 555px content area */
+.glance-side .glance-step {
+    min-height: 42px;
+    font-size: 30px;
+}
