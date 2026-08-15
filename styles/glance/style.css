@@ -234,3 +234,11 @@ button.active label {
     font-size: 34px;
     font-weight: bold;
 }
+
+/* home screen recent-file cards */
+.glance-card {
+    background-color: #14171d;
+    border: 1px solid #262c36;
+    border-radius: 14px;
+    padding: 8px 12px;
+}
