@@ -321,9 +321,7 @@ class Panel(ScreenPanel):
             if self.probe_count:
                 pass_n = (self.probe_count - 1) // 4 + 1
                 point = (self.probe_count - 1) % 4 + 1
-                self.sub_lbl.set_label(
-                    _("Quad gantry level") + f"  ·  " + _("pass") + f" {pass_n} · "
-                    + _("probe") + f" {point}/4")
+                self.sub_lbl.set_label(f"QGL  ·  " + _("pass") + f" {pass_n}  ·  {point}/4")
             else:
                 self.sub_lbl.set_label(_("Quad gantry level"))
         elif self.msg.startswith("Scanning"):
