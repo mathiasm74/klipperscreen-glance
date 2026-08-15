@@ -26,7 +26,6 @@ class Panel(ScreenPanel):
         self.speed = 150
         self.pos = [0.0, 0.0, 0.0]
         self.homed = ""
-        self.tap_target = None
 
         # bed size from config
         self.max_x = self._axis_max("stepper_x", 300)
@@ -66,22 +65,17 @@ class Panel(ScreenPanel):
         col.get_style_context().add_class("glance-side")
         col.set_hexpand(True)
 
-        zrow = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        zt = Gtk.Label(label="Z", xalign=0)
+        # big live Z over the phase rule, as in the design drawings
+        zhero = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        zhero.get_style_context().add_class("glance-temp-row")
+        zhero.get_style_context().add_class("ph-prep")
+        zt = Gtk.Label(label="Z", xalign=0, valign=Gtk.Align.END)
         zt.get_style_context().add_class("glance-temp-name")
         self.z_lbl = Gtk.Label(label="—", xalign=1, hexpand=True)
-        self.z_lbl.get_style_context().add_class("glance-temp-val")
-        zdown = Gtk.Button(label="▼")
-        zup = Gtk.Button(label="▲")
-        for b, d in ((zdown, -1), (zup, 1)):
-            b.get_style_context().add_class("glance-jog")
-            b.set_hexpand(False)
-            b.connect("clicked", self.z_jog, d)
-        zrow.pack_start(zt, False, False, 0)
-        zrow.pack_start(self.z_lbl, True, True, 0)
-        zrow.pack_end(zup, False, False, 0)
-        zrow.pack_end(zdown, False, False, 0)
-        col.pack_start(zrow, False, False, 0)
+        self.z_lbl.get_style_context().add_class("glance-z-val")
+        zhero.pack_start(zt, False, False, 0)
+        zhero.pack_end(self.z_lbl, True, True, 0)
+        col.pack_start(zhero, False, False, 0)
 
         chips = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         self.z_chips = []
@@ -94,10 +88,19 @@ class Panel(ScreenPanel):
             self.z_chips.append(c)
         col.pack_start(chips, False, False, 0)
 
-        # (the XY jog cross is gone: the tap-to-move map covers coarse XY and
-        # taps can be as precise as the finger; the step only drives Z jog now)
+        # fine jog + its step selector share one row under the chips
+        jogrow = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        zdown = Gtk.Button(label="▼")
+        zup = Gtk.Button(label="▲")
+        for b, d in ((zdown, -1), (zup, 1)):
+            b.get_style_context().add_class("glance-jog")
+            b.set_hexpand(False)
+            b.connect("clicked", self.z_jog, d)
+        jogrow.pack_start(zdown, False, False, 0)
+        jogrow.pack_start(zup, False, False, 0)
         self.step_sel = self._segmented([f"{s:g}" for s in STEPS], self.set_step, 1)
-        col.pack_start(self._selrow(_("Z step · mm"), self.step_sel), False, False, 0)
+        jogrow.pack_end(self.step_sel, True, True, 0)
+        col.pack_start(jogrow, False, False, 0)
         self.speed_sel = self._segmented([str(s) for s in SPEEDS], self.set_speed, 1)
         col.pack_start(self._selrow(_("Travel · mm/s"), self.speed_sel), False, False, 0)
 
@@ -171,16 +174,14 @@ class Panel(ScreenPanel):
         cr.set_source_rgb(0.063, 0.078, 0.106)
         cr.rectangle(0, 0, w, h)
         cr.fill()
-        # grid every 50mm
+        # grid: six equal cells per axis - symmetric for any bed size
         cr.set_line_width(1)
         cr.set_source_rgba(1, 1, 1, 0.07)
-        step = 50
-        for gx in range(0, int(self.max_x) + 1, step):
-            x = gx / self.max_x * w
+        for i in range(1, 6):
+            x = i / 6 * w
             cr.move_to(x, 0)
             cr.line_to(x, h)
-        for gy in range(0, int(self.max_y) + 1, step):
-            y = h - gy / self.max_y * h
+            y = i / 6 * h
             cr.move_to(0, y)
             cr.line_to(w, y)
         cr.stroke()
@@ -197,15 +198,6 @@ class Panel(ScreenPanel):
             cr.arc(min(max(x, 6), w - 6), min(max(y, 6), h - 6), 4, 0, 6.284)
             cr.fill()
         xy_homed = "x" in self.homed and "y" in self.homed
-        # tap target ghost
-        if self.tap_target and xy_homed:
-            tx, ty = self.tap_target
-            x = tx / self.max_x * w
-            y = h - ty / self.max_y * h
-            cr.set_source_rgba(0.2, 0.77, 0.91, 0.8)
-            cr.set_line_width(1.5)
-            cr.arc(x, y, 10, 0, 6.284)
-            cr.stroke()
         # head position
         if xy_homed:
             x = self.pos[0] / self.max_x * w
@@ -249,8 +241,6 @@ class Panel(ScreenPanel):
                 break
         bx = min(max(bx, 0), self.max_x)
         by = min(max(by, 0), self.max_y)
-        self.tap_target = (bx, by)
-        self.map.queue_draw()
         script = "G90\n"
         if self.pos[2] < SAFE_Z and "z" in self.homed:
             script += f"G0 Z{SAFE_Z} F{Z_SPEED * 60}\n"

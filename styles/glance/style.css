@@ -260,3 +260,10 @@ button.active label {
 .glance-side .horizontal_togglebuttons_active label {
     font-size: 28px;
 }
+
+/* move screen: big live Z in the display face */
+.glance-z-val {
+    font-family: "Anton";
+    font-size: 58px;
+    color: #e8eaed;
+}
