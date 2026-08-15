@@ -47,7 +47,7 @@ class Panel(ScreenPanel):
         map_wrap.pack_start(self.pos_lbl, False, False, 0)
 
         # ---- right column ----
-        col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         col.get_style_context().add_class("glance-side")
         col.set_hexpand(True)
 
@@ -59,7 +59,7 @@ class Panel(ScreenPanel):
         zdown = Gtk.Button(label="▼")
         zup = Gtk.Button(label="▲")
         for b, d in ((zdown, -1), (zup, 1)):
-            b.get_style_context().add_class("glance-step")
+            b.get_style_context().add_class("glance-jog")
             b.set_hexpand(False)
             b.connect("clicked", self.z_jog, d)
         zrow.pack_start(zt, False, False, 0)
@@ -90,13 +90,14 @@ class Panel(ScreenPanel):
         self.jog_btns = []
         for glyph, gx, gy, axis, sign in arrows:
             b = Gtk.Button(label=glyph)
-            b.get_style_context().add_class("glance-step")
+            b.get_style_context().add_class("glance-jog")
             b.connect("clicked", self.xy_jog, axis, sign)
             pad.attach(b, gx, gy, 1, 1)
             self.jog_btns.append(b)
         pad.attach(self.step_echo, 1, 1, 1, 1)
         pad.set_halign(Gtk.Align.CENTER)
-        col.pack_start(pad, True, True, 0)
+        pad.set_vexpand(False)
+        col.pack_start(pad, False, False, 0)
 
         self.step_sel = self._segmented([f"{s:g}" for s in STEPS], self.set_step, 1)
         col.pack_start(self._selrow(_("Step · mm"), self.step_sel), False, False, 0)

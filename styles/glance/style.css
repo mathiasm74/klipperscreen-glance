@@ -242,3 +242,21 @@ button.active label {
     border-radius: 14px;
     padding: 8px 12px;
 }
+
+/* move screen: compact jog buttons and segmented selectors so the right
+   column fits the 515px content height with the rail visible */
+.glance-jog {
+    min-height: 46px;
+    min-width: 60px;
+    font-size: 28px;
+    padding: 0;
+}
+.glance-side .horizontal_togglebuttons {
+    min-height: 44px;
+}
+.glance-side .horizontal_togglebuttons label {
+    font-size: 24px;
+}
+.glance-side .horizontal_togglebuttons_active label {
+    font-size: 28px;
+}

@@ -115,6 +115,9 @@ class Panel(ScreenPanel):
         inner.pack_end(self.rail, False, False, 0)
         self.content.add(inner)
         self._phase_widgets = (self.big_lbl, self.rail, self.root)
+        # the gcode list and per-file metadata arrive asynchronously; refresh
+        # the cards whenever the file store changes
+        self._files.add_callback(self._files_changed)
 
     @staticmethod
     def _fmt_short(seconds):
@@ -136,7 +139,13 @@ class Panel(ScreenPanel):
                 ctx.add_class(cls)
         self.big_lbl.set_label(mode)
 
+    def _files_changed(self, action=None, item=None):
+        GLib.idle_add(self._refresh_recent)
+
     def process_update(self, action, data):
+        if action == "notify_metadata_update":
+            self._refresh_recent()
+            return
         if action != "notify_status_update":
             return
         nt = self._printer.get_stat("extruder", "temperature")
