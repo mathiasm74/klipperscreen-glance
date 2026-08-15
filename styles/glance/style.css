@@ -217,3 +217,14 @@ button {
     font-size: 13px;
     color: #8a8d97;
 }
+
+/* selected / toggled buttons anywhere in the UI: solid accent fill with dark
+   text and larger type - unmistakable even on an LCD with poor viewing angles */
+.horizontal_togglebuttons_active,
+.button_active,
+button.active {
+    background-color: #33c5e8;
+    color: #0b0d10;
+    font-size: 30px;
+    font-weight: bold;
+}
