@@ -219,12 +219,18 @@ button {
 }
 
 /* selected / toggled buttons anywhere in the UI: solid accent fill with dark
-   text and larger type - unmistakable even on an LCD with poor viewing angles */
+   text and larger type - unmistakable even on an LCD with poor viewing angles.
+   base.css sets color/font-size directly on every label via `*`, and direct
+   hits beat inheritance - so the labels must be targeted explicitly. */
 .horizontal_togglebuttons_active,
 .button_active,
 button.active {
     background-color: #33c5e8;
+}
+.horizontal_togglebuttons_active label,
+.button_active label,
+button.active label {
     color: #0b0d10;
-    font-size: 30px;
+    font-size: 34px;
     font-weight: bold;
 }
