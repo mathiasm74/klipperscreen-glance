@@ -170,6 +170,8 @@ class Panel(ScreenPanel):
         self.backdrop = self._build_sheet()
         self.overlay.add_overlay(self.backdrop)
         self.content.pack_start(self.overlay, True, True, 0)
+        self._phase_widgets = (self.big_lbl, self.rail, self.root, self.sheet_box,
+                               self.z_main, self.z_digit, self.z_tail)
 
     @staticmethod
     def _temp_row(name):
@@ -222,7 +224,7 @@ class Panel(ScreenPanel):
             return
         self.phase = phase
         self.phase_lbl.set_label(label)
-        for widget in (self.big_lbl, self.rail, self.root):
+        for widget in self._phase_widgets:
             ctx = widget.get_style_context()
             for c in PHASE_CLASSES:
                 ctx.remove_class(c)
@@ -619,22 +621,37 @@ class Panel(ScreenPanel):
         zrow.get_style_context().add_class("glance-temp-row")
         zname = Gtk.Label(label=_("Z offset"), xalign=0, hexpand=True)
         zname.get_style_context().add_class("glance-temp-name")
-        zval = Gtk.Label(label="+0.000")
-        zval.get_style_context().add_class("glance-temp-val")
-        zval.set_size_request(150, -1)
-        zval.set_hexpand(False)
-        self.sheet_labels["zoff"] = zval
-        zminus = Gtk.Button(label="−.01")
-        zplus = Gtk.Button(label="+.01")
+        # the value is split so tiny arrows can bracket the hundredths digit,
+        # showing exactly which digit the -/+ buttons change
+        zbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        zbox.set_valign(Gtk.Align.CENTER)
+        zbox.set_hexpand(False)
+        self.z_main = Gtk.Label(label="+0.0")
+        self.z_digit = Gtk.Label(label="0")
+        self.z_tail = Gtk.Label(label="0")
+        for lbl in (self.z_main, self.z_digit, self.z_tail):
+            lbl.get_style_context().add_class("glance-temp-val")
+        digit_col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        up, down = Gtk.Label(label="▲"), Gtk.Label(label="▼")
+        for a in (up, down):
+            a.get_style_context().add_class("glance-z-arrow")
+        digit_col.pack_start(up, False, False, 0)
+        digit_col.pack_start(self.z_digit, False, False, 0)
+        digit_col.pack_start(down, False, False, 0)
+        zbox.pack_start(self.z_main, False, False, 0)
+        zbox.pack_start(digit_col, False, False, 0)
+        zbox.pack_start(self.z_tail, False, False, 0)
+        zminus = Gtk.Button(label="−")
+        zplus = Gtk.Button(label="+")
         for b, d in ((zminus, -0.01), (zplus, 0.01)):
-            b.get_style_context().add_class("glance-step")
+            b.get_style_context().add_class("glance-z-step")
             b.set_hexpand(False)
             b.set_valign(Gtk.Align.CENTER)
             b.connect("clicked", self.adjust_zoffset, d)
         zrow.pack_start(zname, True, True, 0)
-        zrow.pack_end(zplus, False, False, 0)
-        zrow.pack_end(zval, False, False, 0)
-        zrow.pack_end(zminus, False, False, 0)
+        zrow.pack_end(zplus, False, False, 12)
+        zrow.pack_end(zbox, False, False, 0)
+        zrow.pack_end(zminus, False, False, 12)
         box.pack_start(zrow, False, False, 0)
 
         grid = Gtk.Grid(column_homogeneous=True, row_spacing=10, column_spacing=32)
@@ -661,6 +678,7 @@ class Panel(ScreenPanel):
             b.get_style_context().add_class("glance-row-btn")
             row.pack_start(b, True, True, 0)
         box.pack_start(row, False, False, 0)
+        self.sheet_box = box
 
         backdrop.add(card)
         # pre-render then seal, so attach_panel's show_all can't reveal it
@@ -690,7 +708,10 @@ class Panel(ScreenPanel):
         gs = self._printer.get_stat
         offset = gs("gcode_move", "homing_origin")
         if offset:
-            self.sheet_labels["zoff"].set_label(f"{float(offset[2]):+.3f}")
+            s = f"{float(offset[2]):+.3f}"
+            self.z_main.set_label(s[:4])
+            self.z_digit.set_label(s[4])
+            self.z_tail.set_label(s[5])
         pos = gs("gcode_move", "gcode_position")
         if pos:
             self.sheet_labels["z"].set_label(f"{float(pos[2]):.2f} mm")

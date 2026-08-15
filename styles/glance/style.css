@@ -191,3 +191,29 @@ button {
     border-radius: 18px;
     padding: 24px 28px;
 }
+/* card border and z-offset digits take the phase color for pop */
+.glance-sheet.ph-heat  { border-color: @ph-heat; }
+.glance-sheet.ph-prep  { border-color: @ph-prep; }
+.glance-sheet.ph-print { border-color: @ph-print; }
+.glance-sheet.ph-done  { border-color: @ph-done; }
+.glance-sheet.ph-err   { border-color: @ph-err; }
+.glance-temp-val.ph-heat  { color: @ph-heat; }
+.glance-temp-val.ph-prep  { color: @ph-prep; }
+.glance-temp-val.ph-print { color: @ph-print; }
+.glance-temp-val.ph-done  { color: @ph-done; }
+.glance-temp-val.ph-err   { color: @ph-err; }
+/* buttons must stand off the card, not blend into it */
+.glance-sheet button {
+    background-color: #242b39;
+    border: 1px solid #3b4456;
+}
+.glance-z-step {
+    min-height: 60px;
+    min-width: 68px;
+    font-size: 38px;
+    padding: 0 6px;
+}
+.glance-z-arrow {
+    font-size: 13px;
+    color: #8a8d97;
+}
