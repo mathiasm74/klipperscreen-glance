@@ -113,7 +113,11 @@ class Panel(ScreenPanel):
         inner = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         inner.pack_start(self.root, True, True, 0)
         inner.pack_end(self.rail, False, False, 0)
-        self.content.add(inner)
+        self.overlay = Gtk.Overlay()
+        self.overlay.add(inner)
+        self.backdrop = self._build_confirm()
+        self.overlay.add_overlay(self.backdrop)
+        self.content.pack_start(self.overlay, True, True, 0)
         self._phase_widgets = (self.big_lbl, self.rail, self.root)
         # the gcode list and per-file metadata arrive asynchronously; refresh
         # the cards whenever the file store changes
@@ -206,22 +210,74 @@ class Panel(ScreenPanel):
             else:
                 card["btn"].hide()
 
+    def _build_confirm(self):
+        # glance-style start-print modal: big preview, name, time, two verbs
+        backdrop = Gtk.EventBox()
+        backdrop.get_style_context().add_class("glance-backdrop")
+        backdrop.connect("button-release-event", self.close_confirm)
+        card = Gtk.EventBox()
+        card.connect("button-release-event", lambda w, e: True)
+        card.set_halign(Gtk.Align.CENTER)
+        card.set_valign(Gtk.Align.CENTER)
+        card.set_size_request(int(self._screen.width * 0.55), -1)
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        box.get_style_context().add_class("glance-sheet")
+        card.add(box)
+        self.confirm_file = None
+        self.confirm_img = Gtk.Image()
+        self.confirm_name = Gtk.Label(label="", halign=Gtk.Align.CENTER)
+        self.confirm_name.get_style_context().add_class("glance-temp-val")
+        self.confirm_name.set_ellipsize(Pango.EllipsizeMode.MIDDLE)
+        self.confirm_time = Gtk.Label(label="", halign=Gtk.Align.CENTER)
+        self.confirm_time.get_style_context().add_class("glance-temp-name")
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        cancel = Gtk.Button(label=_("Cancel"))
+        cancel.get_style_context().add_class("glance-row-btn")
+        cancel.connect("clicked", self.close_confirm)
+        start = Gtk.Button(label=_("Start"))
+        start.get_style_context().add_class("glance-row-btn")
+        start.get_style_context().add_class("glance-start-btn")
+        start.connect("clicked", self.start_confirmed)
+        for b in (cancel, start):
+            b.set_hexpand(False)
+            row.pack_start(b, True, True, 0)
+        box.pack_start(self.confirm_img, False, False, 0)
+        box.pack_start(self.confirm_name, False, False, 0)
+        box.pack_start(self.confirm_time, False, False, 0)
+        box.pack_start(row, False, False, 0)
+        backdrop.add(card)
+        backdrop.show_all()
+        backdrop.hide()
+        backdrop.set_no_show_all(True)
+        return backdrop
+
     def card_clicked(self, widget, index):
         if index >= len(self.recent):
             return
-        filename = self.recent[index]
-        buttons = [
-            {"name": _("Print"), "response": Gtk.ResponseType.OK, "style": "dialog-info"},
-            {"name": _("Go Back"), "response": Gtk.ResponseType.CANCEL, "style": "dialog-error"},
-        ]
-        label = Gtk.Label(hexpand=True, vexpand=True, wrap=True)
-        label.set_markup(_("Print") + f"\n\n<b>{os.path.splitext(filename)[0]}</b> ?")
-        self._gtk.Dialog(_("Print"), buttons, label, self._print_confirm, filename)
+        self.confirm_file = self.recent[index]
+        meta = self._files.files.get(self.confirm_file, {})
+        self.confirm_name.set_label(os.path.splitext(self.confirm_file)[0])
+        est = meta.get("estimated_time")
+        self.confirm_time.set_label(self._fmt_short(est) if est else "")
+        pixbuf = self.get_file_image(self.confirm_file, self._screen.width * 0.48,
+                                     self._screen.height * 0.42)
+        if pixbuf is not None:
+            self.confirm_img.set_from_pixbuf(pixbuf)
+        else:
+            self.confirm_img.clear()
+        self.backdrop.show()
 
-    def _print_confirm(self, dialog, response_id, filename):
-        self._gtk.remove_dialog(dialog)
-        if response_id == Gtk.ResponseType.OK:
-            self._screen._ws.klippy.print_start(filename)
+    def close_confirm(self, widget=None, event=None):
+        self.backdrop.hide()
+        return True
+
+    def start_confirmed(self, widget):
+        self.backdrop.hide()
+        if self.confirm_file:
+            self._screen._ws.klippy.print_start(self.confirm_file)
+
+    def deactivate(self):
+        self.backdrop.hide()
 
     # ---- doors ---------------------------------------------------------------
 
