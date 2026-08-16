@@ -281,3 +281,8 @@ button.active label {
     min-height: 42px;
     font-size: 30px;
 }
+
+/* inactive z-offset digit arrows keep their space but disappear */
+.glance-z-arrow-off {
+    opacity: 0;
+}

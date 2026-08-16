@@ -172,7 +172,7 @@ class Panel(ScreenPanel):
         self.overlay.add_overlay(self.backdrop)
         self.content.pack_start(self.overlay, True, True, 0)
         self._phase_widgets = (self.big_lbl, self.rail, self.root, self.sheet_box,
-                               self.z_main, self.z_digit, self.z_tail)
+                               self.z_prefix) + tuple(self.z_digits)
 
     @staticmethod
     def _temp_row(name):
@@ -639,36 +639,45 @@ class Panel(ScreenPanel):
         zrow.get_style_context().add_class("glance-temp-row")
         zname = Gtk.Label(label=_("Z offset"), xalign=0, hexpand=True)
         zname.get_style_context().add_class("glance-temp-name")
-        # the value is split so tiny arrows can bracket the hundredths digit,
-        # showing exactly which digit the -/+ buttons change
+        # every decimal gets its own column with its own arrow pair; tapping
+        # the number cycles which decimal is active (arrows follow), and the
+        # -/+ buttons adjust by that digit's step (0.1 / 0.01 / 0.001)
+        self.z_digit_idx = 1  # hundredths by default
         zbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         zbox.set_valign(Gtk.Align.CENTER)
-        zbox.set_hexpand(False)
-        self.z_main = Gtk.Label(label="+0.0")
-        self.z_digit = Gtk.Label(label="0")
-        self.z_tail = Gtk.Label(label="0")
-        for lbl in (self.z_main, self.z_digit, self.z_tail):
-            lbl.get_style_context().add_class("glance-temp-val")
-        digit_col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        up, down = Gtk.Label(label="▲"), Gtk.Label(label="▼")
-        for a in (up, down):
-            a.get_style_context().add_class("glance-z-arrow")
-        digit_col.pack_start(up, False, False, 0)
-        digit_col.pack_start(self.z_digit, False, False, 0)
-        digit_col.pack_start(down, False, False, 0)
-        zbox.pack_start(self.z_main, False, False, 0)
-        zbox.pack_start(digit_col, False, False, 0)
-        zbox.pack_start(self.z_tail, False, False, 0)
+        self.z_prefix = Gtk.Label(label="+0.")
+        self.z_prefix.get_style_context().add_class("glance-temp-val")
+        zbox.pack_start(self.z_prefix, False, False, 0)
+        self.z_digits = []
+        self.z_arrows = []
+        for i in range(3):
+            colbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+            up, down = Gtk.Label(label="▲"), Gtk.Label(label="▼")
+            d = Gtk.Label(label="0")
+            d.get_style_context().add_class("glance-temp-val")
+            for a in (up, down):
+                a.get_style_context().add_class("glance-z-arrow")
+            colbox.pack_start(up, False, False, 0)
+            colbox.pack_start(d, False, False, 0)
+            colbox.pack_start(down, False, False, 0)
+            zbox.pack_start(colbox, False, False, 0)
+            self.z_digits.append(d)
+            self.z_arrows.append((up, down))
+        self._sync_z_arrows()
+        ztap = Gtk.EventBox()
+        ztap.add(zbox)
+        ztap.set_hexpand(False)
+        ztap.connect("button-release-event", self.cycle_z_digit)
         zminus = Gtk.Button(label="−")
         zplus = Gtk.Button(label="+")
-        for b, d in ((zminus, -0.01), (zplus, 0.01)):
+        for b, sign in ((zminus, -1), (zplus, 1)):
             b.get_style_context().add_class("glance-z-step")
             b.set_hexpand(False)
             b.set_valign(Gtk.Align.CENTER)
-            b.connect("clicked", self.adjust_zoffset, d)
+            b.connect("clicked", self.adjust_zoffset, sign)
         zrow.pack_start(zname, True, True, 0)
         zrow.pack_end(zplus, False, False, 12)
-        zrow.pack_end(zbox, False, False, 0)
+        zrow.pack_end(ztap, False, False, 0)
         zrow.pack_end(zminus, False, False, 12)
         box.pack_start(zrow, False, False, 0)
 
@@ -717,8 +726,24 @@ class Panel(ScreenPanel):
         self.close_sheet()
         self._screen._go_to_submenu(widget, "")
 
-    def adjust_zoffset(self, widget, delta):
-        self._screen._ws.klippy.gcode_script(f"SET_GCODE_OFFSET Z_ADJUST={delta:+.3f} MOVE=1")
+    def _sync_z_arrows(self):
+        for i, (up, down) in enumerate(self.z_arrows):
+            for a in (up, down):
+                ctx = a.get_style_context()
+                if i == self.z_digit_idx:
+                    ctx.remove_class("glance-z-arrow-off")
+                else:
+                    ctx.add_class("glance-z-arrow-off")
+
+    def cycle_z_digit(self, widget, event):
+        self.z_digit_idx = (self.z_digit_idx + 1) % 3
+        self._sync_z_arrows()
+        return True
+
+    def adjust_zoffset(self, widget, sign):
+        step = (0.1, 0.01, 0.001)[self.z_digit_idx]
+        self._screen._ws.klippy.gcode_script(
+            f"SET_GCODE_OFFSET Z_ADJUST={step * sign:+.3f} MOVE=1")
 
     def _update_sheet(self):
         if not self.backdrop.get_visible():
@@ -727,9 +752,9 @@ class Panel(ScreenPanel):
         offset = gs("gcode_move", "homing_origin")
         if offset:
             s = f"{float(offset[2]):+.3f}"
-            self.z_main.set_label(s[:4])
-            self.z_digit.set_label(s[4])
-            self.z_tail.set_label(s[5])
+            self.z_prefix.set_label(s[:-3])
+            for i, d in enumerate(self.z_digits):
+                d.set_label(s[-3 + i])
         pos = gs("gcode_move", "gcode_position")
         if pos:
             self.sheet_labels["z"].set_label(f"{float(pos[2]):.2f} mm")
