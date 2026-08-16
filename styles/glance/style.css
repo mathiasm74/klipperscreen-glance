@@ -287,14 +287,10 @@ button.active label {
     opacity: 0;
 }
 
-/* the primary verb in the start-print modal: solid green, dark bold text -
-   same emphasis grammar as selected segments */
-.glance-start-btn,
-.glance-sheet .glance-start-btn {
-    background-color: #3fd968;
-}
+/* the primary verb in the start-print modal: green bold text on the
+   standard dark button */
 .glance-start-btn label {
-    color: #0b0d10;
+    color: #3fd968;
     font-size: 28px;
     font-weight: bold;
 }
