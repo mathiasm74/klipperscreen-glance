@@ -668,8 +668,8 @@ class Panel(ScreenPanel):
         ztap.add(zbox)
         ztap.set_hexpand(False)
         ztap.connect("button-release-event", self.cycle_z_digit)
-        zminus = Gtk.Button(label="▼")
-        zplus = Gtk.Button(label="▲")
+        zminus = Gtk.Button(label="↓")
+        zplus = Gtk.Button(label="↑")
         for b, sign in ((zminus, -1), (zplus, 1)):
             b.get_style_context().add_class("glance-z-step")
             b.set_hexpand(False)
