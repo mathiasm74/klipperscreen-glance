@@ -351,6 +351,9 @@ class Panel(ScreenPanel):
                 self.refresh_view()
             return
         if action == "notify_metadata_update" and data.get("filename") == self.filename:
+            # a re-upload under the SAME name (Cura re-slice) refreshes
+            # metadata; the cached thumbnail must be invalidated too
+            self.thumb_loaded = False
             self.get_file_metadata(response=True)
             return
         if action != "notify_status_update":
