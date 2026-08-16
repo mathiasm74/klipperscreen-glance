@@ -61,6 +61,9 @@ class Panel(ScreenPanel):
         name0 = Gtk.Label(label="", xalign=0)
         name0.get_style_context().add_class("glance-fname")
         name0.set_ellipsize(Pango.EllipsizeMode.MIDDLE)
+        # ellipsized labels still request full-text natural width; cap it so
+        # long filenames can't widen the column and squeeze the hero
+        name0.set_max_width_chars(24)
         time0 = Gtk.Label(label="", xalign=0)
         time0.get_style_context().add_class("glance-temp-name")
         big_box.pack_start(img, True, True, 0)
@@ -79,6 +82,7 @@ class Panel(ScreenPanel):
             name = Gtk.Label(label="", xalign=0, hexpand=True)
             name.get_style_context().add_class("glance-fname")
             name.set_ellipsize(Pango.EllipsizeMode.MIDDLE)
+            name.set_max_width_chars(18)
             t = Gtk.Label(label="", xalign=1)
             t.get_style_context().add_class("glance-temp-name")
             rbox.pack_start(name, True, True, 0)
