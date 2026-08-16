@@ -131,7 +131,9 @@ class Panel(ScreenPanel):
     def _fmt_short(seconds):
         seconds = max(int(seconds), 0)
         h, m = seconds // 3600, (seconds % 3600) // 60
-        return f"{h}h {m:02}m" if h > 0 else f"{m}m"
+        if h > 0:
+            return f"{h}h {m:02}m"
+        return f"{m}m" if m > 0 else "<1m"
 
     # ---- state ---------------------------------------------------------------
 
