@@ -81,6 +81,9 @@ class Panel(ScreenPanel):
         self.bed_row, self.bed_val = self._temp_row(_("Bed"))
         self.speed_row, self.speed_val = self._factor_row(_("Speed"), self.adjust_speed)
         self.flow_row, self.flow_val = self._factor_row(_("Flow"), self.adjust_flow)
+        self.zoff_row, self.zoff_val = self._factor_row(_("Z offset"), self.adjust_zoffset_row)
+        self.zoff_val.set_size_request(116, -1)
+        self.zoff_val.set_label("+0.000")
         # paused-state replacements for the factor rows (same footprint):
         # quick inline extrude/retract, and a door into the full extrude panel
         self.btn_unload = Gtk.Button(label=_("Unload"))
@@ -135,7 +138,7 @@ class Panel(ScreenPanel):
         side.pack_start(self.noz_row, False, False, 0)
         side.pack_start(self.bed_row, False, False, 0)
         side.pack_start(self.speed_row, False, False, 0)
-        side.pack_start(self.flow_row, False, False, 0)
+        side.pack_start(self.zoff_row, False, False, 0)
         side.pack_start(self.ext_row, False, False, 0)
         side.pack_start(self.ext_more, False, False, 0)
         side.pack_end(actions, False, False, 0)
@@ -143,8 +146,8 @@ class Panel(ScreenPanel):
         # _show_buttons hides the wrong ones, reflowing the layout (visible in
         # slow-mo as the hero jumping). Pre-show the subtrees once, then seal
         # them so only row-level set_visible controls them.
-        for row in (self.noz_row, self.bed_row, self.speed_row, self.flow_row,
-                    self.ext_row, self.ext_more):
+        for row in (self.noz_row, self.bed_row, self.speed_row, self.zoff_row,
+                    self.flow_row, self.ext_row, self.ext_more):
             row.show_all()
             row.set_no_show_all(True)
         self._show_buttons()
@@ -172,8 +175,7 @@ class Panel(ScreenPanel):
         self.backdrop = self._build_sheet()
         self.overlay.add_overlay(self.backdrop)
         self.content.pack_start(self.overlay, True, True, 0)
-        self._phase_widgets = (self.big_lbl, self.rail, self.root, self.sheet_box,
-                               self.z_prefix) + tuple(self.z_digits)
+        self._phase_widgets = (self.big_lbl, self.rail, self.root, self.sheet_box)
 
     @staticmethod
     def _temp_row(name):
@@ -231,7 +233,7 @@ class Panel(ScreenPanel):
             for c in PHASE_CLASSES:
                 ctx.remove_class(c)
             ctx.add_class(cls)
-        for row in (self.noz_row, self.bed_row, self.speed_row, self.flow_row):
+        for row in (self.noz_row, self.bed_row, self.speed_row, self.zoff_row):
             ctx = row.get_style_context()
             for c in PHASE_CLASSES:
                 ctx.remove_class(c)
@@ -279,7 +281,7 @@ class Panel(ScreenPanel):
         # heat/level/mesh/cool the rows just add noise, so hide them
         temps = not running and not paused
         for w, vis in ((self.noz_row, temps), (self.bed_row, temps),
-                       (self.speed_row, running), (self.flow_row, running),
+                       (self.speed_row, running), (self.zoff_row, running),
                        (self.ext_row, paused), (self.ext_more, paused)):
             w.set_visible(vis)
 
@@ -369,6 +371,15 @@ class Panel(ScreenPanel):
             if "extrude_factor" in gm:
                 self.flow_pct = round(float(gm["extrude_factor"]) * 100)
                 self.flow_val.set_label(f"{self.flow_pct}%")
+            if "homing_origin" in gm:
+                live = float(gm["homing_origin"][2])
+                if self.pending_zoff is not None:
+                    if abs(live - self.pending_zoff) < 0.0005:
+                        self.pending_zoff = None
+                        self.zoff_val.get_style_context().remove_class("glance-busy")
+                        self._show_zoff(live)
+                else:
+                    self._show_zoff(live)
         if "display_status" in data and "message" in data["display_status"]:
             self.msg = data["display_status"]["message"] or ""
         if "print_stats" in data:
@@ -429,7 +440,7 @@ class Panel(ScreenPanel):
             self._set_busy(b, False)
         # queued offset taps die with the job state (e.g. cancel flushes them)
         self.pending_zoff = None
-        self.z_value_box.get_style_context().remove_class("glance-busy")
+        self.zoff_val.get_style_context().remove_class("glance-busy")
         self.content.show_all()
         self._show_buttons()
 
@@ -639,52 +650,8 @@ class Panel(ScreenPanel):
         box.get_style_context().add_class("glance-sheet")
         card.add(box)
 
-        zrow = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
-        zrow.get_style_context().add_class("glance-temp-row")
-        zname = Gtk.Label(label=_("Z offset"), xalign=0, hexpand=True)
-        zname.get_style_context().add_class("glance-temp-name")
-        # every decimal gets its own column with its own arrow pair; tapping
-        # the number cycles which decimal is active (arrows follow), and the
-        # -/+ buttons adjust by that digit's step (0.1 / 0.01 / 0.001)
-        self.z_digit_idx = 1  # hundredths by default
-        zbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        zbox.set_valign(Gtk.Align.CENTER)
-        self.z_prefix = Gtk.Label(label="+0.")
-        self.z_prefix.get_style_context().add_class("glance-temp-val")
-        self.z_value_box = zbox
-        zbox.pack_start(self.z_prefix, False, False, 0)
-        self.z_digits = []
-        self.z_arrows = []
-        for i in range(3):
-            colbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-            up, down = Gtk.Label(label="▲"), Gtk.Label(label="▼")
-            d = Gtk.Label(label="0")
-            d.get_style_context().add_class("glance-temp-val")
-            for a in (up, down):
-                a.get_style_context().add_class("glance-z-arrow")
-            colbox.pack_start(up, False, False, 0)
-            colbox.pack_start(d, False, False, 0)
-            colbox.pack_start(down, False, False, 0)
-            zbox.pack_start(colbox, False, False, 0)
-            self.z_digits.append(d)
-            self.z_arrows.append((up, down))
-        self._sync_z_arrows()
-        ztap = Gtk.EventBox()
-        ztap.add(zbox)
-        ztap.set_hexpand(False)
-        ztap.connect("button-release-event", self.cycle_z_digit)
-        zminus = Gtk.Button(label="↓")
-        zplus = Gtk.Button(label="↑")
-        for b, sign in ((zminus, -1), (zplus, 1)):
-            b.get_style_context().add_class("glance-z-step")
-            b.set_hexpand(False)
-            b.set_valign(Gtk.Align.CENTER)
-            b.connect("clicked", self.adjust_zoffset, sign)
-        zrow.pack_start(zname, True, True, 0)
-        zrow.pack_end(zplus, False, False, 12)
-        zrow.pack_end(ztap, False, False, 0)
-        zrow.pack_end(zminus, False, False, 12)
-        box.pack_start(zrow, False, False, 0)
+        # flow moved here from the job screen (z-offset took its slot)
+        box.pack_start(self.flow_row, False, False, 0)
 
         grid = Gtk.Grid(column_homogeneous=True, row_spacing=10, column_spacing=32)
         stats = [("layer", _("Layer")), ("z", "Z"), ("fila", _("Filament")),
@@ -731,55 +698,28 @@ class Panel(ScreenPanel):
         self.close_sheet()
         self._screen._go_to_submenu(widget, "")
 
-    def _sync_z_arrows(self):
-        for i, (up, down) in enumerate(self.z_arrows):
-            for a in (up, down):
-                ctx = a.get_style_context()
-                if i == self.z_digit_idx:
-                    ctx.remove_class("glance-z-arrow-off")
-                else:
-                    ctx.add_class("glance-z-arrow-off")
-
-    def cycle_z_digit(self, widget, event):
-        self.z_digit_idx = (self.z_digit_idx + 1) % 3
-        self._sync_z_arrows()
-        return True
-
     def _show_zoff(self, value):
-        s = f"{value:+.3f}"
-        self.z_prefix.set_label(s[:-3])
-        for i, d in enumerate(self.z_digits):
-            d.set_label(s[-3 + i])
+        self.zoff_val.set_label(f"{value:+.3f}")
 
-    def adjust_zoffset(self, widget, sign):
+    def adjust_zoffset_row(self, widget, direction):
         # optimistic: during PRINT_START's heating waits the gcode queue is
         # blocked, so the command applies later - show the target value now,
         # pulsing until gcode_move confirms it landed
-        step = (0.1, 0.01, 0.001)[self.z_digit_idx]
+        delta = 0.01 * direction
         offset = self._printer.get_stat("gcode_move", "homing_origin")
         cur = self.pending_zoff if self.pending_zoff is not None else (
             float(offset[2]) if offset and not isinstance(offset, dict) else 0.0)
-        self.pending_zoff = round(cur + step * sign, 3)
+        self.pending_zoff = round(cur + delta, 3)
         self._show_zoff(self.pending_zoff)
-        self.z_value_box.get_style_context().add_class("glance-busy")
+        self.zoff_val.get_style_context().add_class("glance-busy")
         self._screen._ws.klippy.gcode_script(
-            f"SET_GCODE_OFFSET Z_ADJUST={step * sign:+.3f} MOVE=1")
+            f"SET_GCODE_OFFSET Z_ADJUST={delta:+.3f} MOVE=1")
 
     def _update_sheet(self):
         if not self.backdrop.get_visible():
             return
         gs = self._printer.get_stat
-        offset = gs("gcode_move", "homing_origin")
-        if offset and not isinstance(offset, dict):
-            live = float(offset[2])
-            if self.pending_zoff is not None:
-                if abs(live - self.pending_zoff) < 0.0005:
-                    self.pending_zoff = None
-                    self.z_value_box.get_style_context().remove_class("glance-busy")
-                    self._show_zoff(live)
-                # else: keep showing the pending target, still pulsing
-            else:
-                self._show_zoff(live)
+
         pos = gs("gcode_move", "gcode_position")
         if pos:
             self.sheet_labels["z"].set_label(f"{float(pos[2]):.2f} mm")
