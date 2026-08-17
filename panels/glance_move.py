@@ -112,7 +112,7 @@ class Panel(ScreenPanel):
             verbs.pack_start(b, False, False, 0)
 
         # precise spans the full right region under both columns
-        precise = Gtk.Button(label=_("Precise…"))
+        precise = Gtk.Button(label=_("Precise moves"))
         precise.get_style_context().add_class("glance-action")
         precise.get_style_context().add_class("glance-precise")
         precise.set_hexpand(True)
@@ -379,7 +379,7 @@ class Panel(ScreenPanel):
         cr.rectangle(0.5, 0.5, w - 1, h - 1)
         cr.stroke()
         cr.select_font_face("Space Grotesk")
-        cr.set_font_size(16)
+        cr.set_font_size(19)
         for v in Z_LINES:
             y = self._zmap_z_to_y(v, h)
             label = f"{v:g}"
@@ -423,7 +423,7 @@ class Panel(ScreenPanel):
             cr.stroke()
             label = f"{dz:.1f}"
             ext = cr.text_extents(label)
-            cr.set_font_size(22)
+            cr.set_font_size(24)
             cr.move_to(10, dy - 8 if dy > 40 else dy + 26)
             cr.show_text(label)
         return False

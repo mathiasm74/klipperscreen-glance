@@ -303,5 +303,5 @@ button.active label {
 /* precise button under the z map: height tuned so the two maps' bottom
    edges align */
 .glance-precise {
-    min-height: 46px;
+    min-height: 49px;
 }
