@@ -126,7 +126,8 @@ class Panel(ScreenPanel):
         verbs = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         verbs.set_size_request(200, -1)
         verbs.set_hexpand(False)
-        for label, cb in ((_("Home"), self.home), ("QGL", self.qgl),
+        for label, cb in ((_("Home XYZ"), self.home), ("QGL", self.qgl),
+                          (_("Bed mesh"), self.bed_mesh),
                           (_("Motors off"), self.motors_off)):
             b = Gtk.Button(label=label)
             b.get_style_context().add_class("glance-action")
@@ -549,6 +550,9 @@ class Panel(ScreenPanel):
 
     def qgl(self, widget):
         self._screen._ws.klippy.gcode_script("G32")
+
+    def bed_mesh(self, widget):
+        self._screen._ws.klippy.gcode_script("BED_MESH_CALIBRATE")
 
     def motors_off(self, widget):
         self._screen._ws.klippy.gcode_script("M84")
