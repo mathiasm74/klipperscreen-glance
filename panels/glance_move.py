@@ -129,6 +129,7 @@ class Panel(ScreenPanel):
         self.mesh_btn = None
         for label, cb in ((_("Home XYZ"), self.home), ("QGL", self.qgl),
                           (_("Bed mesh"), self.bed_mesh),
+                          (_("Z cal"), self.z_calibrate),
                           (_("Motors off"), self.motors_off)):
             b = Gtk.Button(label=label)
             b.get_style_context().add_class("glance-action")
@@ -557,6 +558,10 @@ class Panel(ScreenPanel):
 
     def bed_mesh(self, widget):
         self._screen._ws.klippy.gcode_script("BED_MESH_CALIBRATE")
+
+    def z_calibrate(self, widget):
+        # stock guided z-offset calibration flow (paper test, +/- and accept)
+        self._screen.show_panel("zcalibrate")
 
     def motors_off(self, widget):
         self._screen._ws.klippy.gcode_script("M84")
