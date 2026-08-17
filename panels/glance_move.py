@@ -52,8 +52,8 @@ class Panel(ScreenPanel):
         map_wrap.pack_start(self.map, False, False, 0)
         pos_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=14)
         self.axis_vals = {}
-        # Z lives in the height map; the third readout shows live move speed
-        for name, key in (("X", "X"), ("Y", "Y"), (_("Speed"), "V")):
+        # Z lives in the height map; the third readout shows the set travel speed
+        for name, key in (("X", "X"), ("Y", "Y"), (_("Travel"), "V")):
             cell = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6, hexpand=True)
             cell.get_style_context().add_class("glance-temp-row")
             cell.get_style_context().add_class("ph-prep")
@@ -65,6 +65,7 @@ class Panel(ScreenPanel):
             cell.pack_end(v, True, True, 0)
             pos_row.pack_start(cell, True, True, 0)
             self.axis_vals[key] = v
+        self.axis_vals["V"].set_label(f"{XY_SPEED:g} mm/s")
         map_wrap.pack_start(pos_row, False, False, 0)
         note = Gtk.Label(label=_("taps travel at") + f" Z ≥ {SAFE_Z:.0f}", xalign=0)
         note.get_style_context().add_class("glance-fname")
@@ -507,9 +508,6 @@ class Panel(ScreenPanel):
             self.z_lbl.set_label(f"{self.pos[2]:.2f}")
             for axis, i in (("X", 0), ("Y", 1)):
                 self.axis_vals[axis].set_label(f"{self.pos[i]:.1f}")
-            vel = self._printer.get_stat("motion_report", "live_velocity")
-            if vel is not None and not isinstance(vel, dict):
-                self.axis_vals["V"].set_label(f"{float(vel):.0f}")
             self._update_precise()
             # targets vanish once reached
             if self.xy_target is not None and \
