@@ -140,12 +140,15 @@ class Panel(ScreenPanel):
         self.btn_resume = self._gtk.Button("resume", None, None, scale=0.9)
         self.btn_stop = self._gtk.Button("stop", None, None, scale=0.9)
         self.btn_close = self._gtk.Button("complete", None, None, scale=0.9)
+        self.btn_save = Gtk.Button(label=_("Save Z"))
         self.btn_more = Gtk.Button(label="• • •")
-        for b in (self.btn_pause, self.btn_resume, self.btn_stop, self.btn_close, self.btn_more):
+        for b in (self.btn_pause, self.btn_resume, self.btn_stop, self.btn_close,
+                  self.btn_save, self.btn_more):
             b.get_style_context().add_class("glance-action")
             b.set_hexpand(True)
         # state-dependent buttons manage their own visibility; show_all() must not undo it
-        for b in (self.btn_pause, self.btn_resume, self.btn_stop, self.btn_close):
+        for b in (self.btn_pause, self.btn_resume, self.btn_stop, self.btn_close,
+                  self.btn_save):
             b.set_no_show_all(True)
         self.btn_pause.show()
         self.btn_stop.show()
@@ -153,6 +156,7 @@ class Panel(ScreenPanel):
         self.btn_resume.connect("clicked", self.resume)
         self.btn_stop.connect("clicked", self.cancel)
         self.btn_close.connect("clicked", self.close_panel)
+        self.btn_save.connect("clicked", self.save_zoffset)
         self.btn_more.connect("clicked", self.open_details)
 
         actions = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
@@ -160,6 +164,7 @@ class Panel(ScreenPanel):
         actions.pack_start(self.btn_resume, True, True, 0)
         actions.pack_start(self.btn_stop, True, True, 0)
         actions.pack_start(self.btn_close, True, True, 0)
+        actions.pack_start(self.btn_save, True, True, 0)
         actions.pack_start(self.btn_more, True, True, 0)
 
         side = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
@@ -307,6 +312,7 @@ class Panel(ScreenPanel):
         self.btn_resume.set_visible(paused)
         self.btn_stop.set_visible(not job_over)
         self.btn_close.set_visible(job_over)
+        self.btn_save.set_visible(self.state == "complete")
         # pause can't act until PRINT_START releases the gcode queue, so
         # don't offer it before the print phase - cancel is the real option.
         # busy buttons stay insensitive until their state transition lands.
@@ -454,6 +460,7 @@ class Panel(ScreenPanel):
             dur = float(self._printer.get_stat("print_stats", "print_duration") or 0)
             self.sub_lbl.set_label(_("elapsed") + f" {self._fmt_short(dur)}")
         elif state == "complete":
+            self.btn_save.set_sensitive(True)
             self.set_phase("done", _("COMPLETE"), "ph-done")
             self._set_big(_("DONE"), word=True)
             total = (self._printer.get_stat("print_stats", "total_duration")
@@ -721,6 +728,11 @@ class Panel(ScreenPanel):
         backdrop.hide()
         backdrop.set_no_show_all(True)
         return backdrop
+
+    def save_zoffset(self, widget):
+        # persists the eddy runtime offset to variables.cfg (no restart)
+        self._screen._ws.klippy.gcode_script("Z_OFFSET_APPLY_PROBE")
+        widget.set_sensitive(False)  # saved - disarm until the next print
 
     def open_details(self, widget):
         self.backdrop.show()
