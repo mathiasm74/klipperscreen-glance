@@ -98,14 +98,19 @@ class Panel(ScreenPanel):
         self.zmap.connect("motion-notify-event", self.on_zmap_motion)
         self.zmap.connect("button-release-event", self.on_zmap_release)
         zcol.pack_start(self.zmap, True, True, 0)
+        precise = Gtk.Button(label=_("Precise…"))
+        precise.get_style_context().add_class("glance-action")
+        precise.get_style_context().add_class("glance-precise")
+        precise.set_hexpand(False)
+        precise.connect("clicked", self.open_precise)
+        zcol.pack_end(precise, False, False, 0)
 
         # ---- right: large verbs ----
         verbs = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         verbs.set_size_request(200, -1)
         verbs.set_hexpand(False)
         for label, cb in ((_("Home"), self.home), ("QGL", self.qgl),
-                          (_("Motors off"), self.motors_off),
-                          (_("Precise…"), self.open_precise)):
+                          (_("Motors off"), self.motors_off)):
             b = Gtk.Button(label=label)
             b.get_style_context().add_class("glance-action")
             b.set_hexpand(False)
