@@ -450,7 +450,15 @@ class Panel(ScreenPanel):
             self.homed = homed
             self.map.queue_draw()
             self.zmap.queue_draw()
-        pos = self._printer.get_stat("gcode_move", "gcode_position")
+        # live_position tracks the physical toolhead during moves (the
+        # commanded gcode_position teleports to the target immediately);
+        # subtract the gcode offset so numbers stay in commanded coordinates
+        pos = self._printer.get_stat("motion_report", "live_position")
+        origin = self._printer.get_stat("gcode_move", "homing_origin")
+        if pos and not isinstance(pos, dict) and origin and not isinstance(origin, dict):
+            pos = [float(pos[i]) - float(origin[i]) for i in range(3)]
+        else:
+            pos = self._printer.get_stat("gcode_move", "gcode_position")
         if pos and not isinstance(pos, dict):
             self.pos = [float(pos[0]), float(pos[1]), float(pos[2])]
             self.z_lbl.set_label(f"{self.pos[2]:.2f}")
