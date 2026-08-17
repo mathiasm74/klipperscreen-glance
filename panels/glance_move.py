@@ -5,11 +5,12 @@
 # modal offers exact per-axis nudging at fine steps.
 
 import logging
+import time
 
 import gi
 
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gdk, Gtk
+from gi.repository import Gdk, GLib, Gtk
 from ks_includes.screen_panel import ScreenPanel
 
 PRECISE_STEPS = (0.01, 0.1, 1, 10)
@@ -314,15 +315,17 @@ class Panel(ScreenPanel):
             cr.fill()
             bx = dxp / w * self.bed_x
             by = (1 - dyp / h) * self.bed_y
-            cr.select_font_face("Space Grotesk")
-            cr.set_font_size(22)
-            label = f"X {bx:.0f} · Y {by:.0f}"
-            ext = cr.text_extents(label)
-            # well clear of the fingertip: up and to the side
-            tx = dxp + 36 if dxp < w - ext.width - 44 else dxp - ext.width - 36
-            ty = dyp - 34 if dyp > 64 else dyp + 52
-            cr.move_to(tx, ty)
-            cr.show_text(label)
+            # numbers appear only once the touch has lived 250ms, so quick
+            # taps don't flash a label under the finger
+            if time.monotonic() - self.map_drag["t0"] >= 0.25:
+                cr.select_font_face("Space Grotesk")
+                cr.set_font_size(22)
+                label = f"X {bx:.0f} · Y {by:.0f}"
+                ext = cr.text_extents(label)
+                tx = dxp + 36 if dxp < w - ext.width - 44 else dxp - ext.width - 36
+                ty = dyp - 34 if dyp > 64 else dyp + 52
+                cr.move_to(tx, ty)
+                cr.show_text(label)
         if xy_homed and self.xy_target is not None and self.map_drag is None:
             tx, ty = self.xy_target
             x = tx / self.bed_x * w
@@ -377,7 +380,9 @@ class Panel(ScreenPanel):
             return True
         if "x" not in self.homed or "y" not in self.homed:
             return True
-        self.map_drag = {"x0": event.x, "y0": event.y, "x": event.x, "y": event.y}
+        self.map_drag = {"x0": event.x, "y0": event.y, "x": event.x, "y": event.y,
+                         "t0": time.monotonic()}
+        GLib.timeout_add(260, lambda: bool(da.queue_draw()))
         da.queue_draw()
         return True
 
@@ -478,11 +483,11 @@ class Panel(ScreenPanel):
             cr.set_line_width(2)
             cr.move_to(4, dy); cr.line_to(w - 4, dy)
             cr.stroke()
-            label = f"{dz:.1f}"
-            ext = cr.text_extents(label)
-            cr.set_font_size(24)
-            cr.move_to(10, dy - 8 if dy > 40 else dy + 26)
-            cr.show_text(label)
+            if time.monotonic() - self.zdrag["t0"] >= 0.25:
+                label = f"{dz:.1f}"
+                cr.set_font_size(24)
+                cr.move_to(10, dy - 8 if dy > 40 else dy + 26)
+                cr.show_text(label)
         return False
 
     def on_zmap_press(self, da, event):
@@ -490,7 +495,8 @@ class Panel(ScreenPanel):
             return True
         if "z" not in self.homed:
             return True
-        self.zdrag = {"y0": event.y, "y": event.y}
+        self.zdrag = {"y0": event.y, "y": event.y, "t0": time.monotonic()}
+        GLib.timeout_add(260, lambda: bool(da.queue_draw()))
         da.queue_draw()
         return True
 
