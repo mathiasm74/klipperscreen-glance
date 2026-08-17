@@ -28,6 +28,8 @@ class Panel(ScreenPanel):
         self.precise_step = 1.0
         self.speed = XY_SPEED
         self.zdrag = None
+        self.xy_target = None
+        self.z_target = None
         self.pos = [0.0, 0.0, 0.0]
         self.homed = ""
 
@@ -271,6 +273,16 @@ class Panel(ScreenPanel):
             cr.arc(min(max(x, 6), w - 6), min(max(y, 6), h - 6), 4, 0, 6.284)
             cr.fill()
         xy_homed = "x" in self.homed and "y" in self.homed
+        if xy_homed and self.xy_target is not None:
+            tx, ty = self.xy_target
+            x = tx / self.bed_x * w
+            y = h - ty / self.bed_y * h
+            cr.set_source_rgba(0.2, 0.77, 0.91, 0.9)
+            cr.set_line_width(2)
+            cr.arc(x, y, 10, 0, 6.284)
+            cr.stroke()
+            cr.arc(x, y, 2, 0, 6.284)
+            cr.fill()
         if xy_homed:
             x = min(max(self.pos[0], 0), self.bed_x) / self.bed_x * w
             y = h - min(max(self.pos[1], 0), self.bed_y) / self.bed_y * h
@@ -317,6 +329,8 @@ class Panel(ScreenPanel):
             script += f"G0 Z{SAFE_Z} F{Z_SPEED * 60}\n"
         script += f"G0 X{bx:.1f} Y{by:.1f} F{self.speed * 60}"
         self._screen._ws.klippy.gcode_script(script)
+        self.xy_target = (bx, by)
+        da.queue_draw()
         return True
 
     @staticmethod
@@ -376,6 +390,13 @@ class Panel(ScreenPanel):
         cr.stroke()
         cr.arc(w - 12, y, 5, 0, 6.284)
         cr.fill()
+        # persistent target line while the head is still on its way
+        if self.z_target is not None and self.zdrag is None:
+            ty = self._zmap_z_to_y(self.z_target, h)
+            cr.set_source_rgba(0.2, 0.77, 0.91, 0.9)
+            cr.set_line_width(2)
+            cr.move_to(4, ty); cr.line_to(w - 4, ty)
+            cr.stroke()
         # drag target marker with live value
         if self.zdrag is not None:
             dy = min(max(self.zdrag["y"], Z_PAD), h - Z_PAD)
@@ -420,6 +441,7 @@ class Panel(ScreenPanel):
                     break
         z = min(max(z, 0.0), min(Z_MAP_MAX, self.max_z))
         self.z_goto(None, z)
+        self.z_target = z
         da.queue_draw()
         return True
 
@@ -448,6 +470,8 @@ class Panel(ScreenPanel):
         homed = self._printer.get_stat("toolhead", "homed_axes")
         if isinstance(homed, str) and homed != self.homed:
             self.homed = homed
+            self.xy_target = None
+            self.z_target = None
             self.map.queue_draw()
             self.zmap.queue_draw()
         # live_position tracks the physical toolhead during moves (the
@@ -465,5 +489,12 @@ class Panel(ScreenPanel):
             for axis, i in (("X", 0), ("Y", 1), ("Z", 2)):
                 self.axis_vals[axis].set_label(f"{self.pos[i]:.1f}")
             self._update_precise()
+            # targets vanish once reached
+            if self.xy_target is not None and \
+                    abs(self.pos[0] - self.xy_target[0]) < 0.8 and \
+                    abs(self.pos[1] - self.xy_target[1]) < 0.8:
+                self.xy_target = None
+            if self.z_target is not None and abs(self.pos[2] - self.z_target) < 0.3:
+                self.z_target = None
             self.map.queue_draw()
             self.zmap.queue_draw()
