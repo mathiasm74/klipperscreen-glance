@@ -587,7 +587,7 @@ class Panel(ScreenPanel):
 
         vrow = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         vrow.get_style_context().add_class("glance-temp-row")
-        vname = Gtk.Label(label=_("Z offset"), xalign=0, hexpand=True)
+        vname = Gtk.Label(label=_("Nozzle height"), xalign=0, hexpand=True)
         vname.get_style_context().add_class("glance-temp-name")
         self.zcal_val = Gtk.Label(label="—")
         self.zcal_val.get_style_context().add_class("glance-temp-val")
@@ -703,8 +703,10 @@ class Panel(ScreenPanel):
             if self.z_target is not None and abs(self.pos[2] - self.z_target) < 0.3:
                 self.z_target = None
             if self.zcal_backdrop.get_visible():
-                offset = self._printer.get_stat("gcode_move", "homing_origin")
-                if offset and not isinstance(offset, dict):
-                    self.zcal_val.set_label(f"{float(offset[2]):+.3f}")
+                # machine-space nozzle height (offset + commanded Z): the number
+                # a paper test intuitively counts down
+                lp = self._printer.get_stat("motion_report", "live_position")
+                if lp and not isinstance(lp, dict):
+                    self.zcal_val.set_label(f"{float(lp[2]):.3f}")
             self.map.queue_draw()
             self.zmap.queue_draw()
