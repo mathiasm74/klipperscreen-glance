@@ -44,6 +44,7 @@ class Panel(ScreenPanel):
         self.flow_pct = 100
         self._busy_buttons = set()
         self.sheet_labels = {}
+        self.pending_zoff = None
         self.thumb_dialog = None
         self.thumb_loaded = False
 
@@ -426,6 +427,9 @@ class Panel(ScreenPanel):
         # the requested transition arrived (or a new one did): busy is over
         for b in (self.btn_pause, self.btn_resume):
             self._set_busy(b, False)
+        # queued offset taps die with the job state (e.g. cancel flushes them)
+        self.pending_zoff = None
+        self.z_value_box.get_style_context().remove_class("glance-busy")
         self.content.show_all()
         self._show_buttons()
 
@@ -647,6 +651,7 @@ class Panel(ScreenPanel):
         zbox.set_valign(Gtk.Align.CENTER)
         self.z_prefix = Gtk.Label(label="+0.")
         self.z_prefix.get_style_context().add_class("glance-temp-val")
+        self.z_value_box = zbox
         zbox.pack_start(self.z_prefix, False, False, 0)
         self.z_digits = []
         self.z_arrows = []
@@ -740,8 +745,23 @@ class Panel(ScreenPanel):
         self._sync_z_arrows()
         return True
 
+    def _show_zoff(self, value):
+        s = f"{value:+.3f}"
+        self.z_prefix.set_label(s[:-3])
+        for i, d in enumerate(self.z_digits):
+            d.set_label(s[-3 + i])
+
     def adjust_zoffset(self, widget, sign):
+        # optimistic: during PRINT_START's heating waits the gcode queue is
+        # blocked, so the command applies later - show the target value now,
+        # pulsing until gcode_move confirms it landed
         step = (0.1, 0.01, 0.001)[self.z_digit_idx]
+        offset = self._printer.get_stat("gcode_move", "homing_origin")
+        cur = self.pending_zoff if self.pending_zoff is not None else (
+            float(offset[2]) if offset and not isinstance(offset, dict) else 0.0)
+        self.pending_zoff = round(cur + step * sign, 3)
+        self._show_zoff(self.pending_zoff)
+        self.z_value_box.get_style_context().add_class("glance-busy")
         self._screen._ws.klippy.gcode_script(
             f"SET_GCODE_OFFSET Z_ADJUST={step * sign:+.3f} MOVE=1")
 
@@ -750,11 +770,16 @@ class Panel(ScreenPanel):
             return
         gs = self._printer.get_stat
         offset = gs("gcode_move", "homing_origin")
-        if offset:
-            s = f"{float(offset[2]):+.3f}"
-            self.z_prefix.set_label(s[:-3])
-            for i, d in enumerate(self.z_digits):
-                d.set_label(s[-3 + i])
+        if offset and not isinstance(offset, dict):
+            live = float(offset[2])
+            if self.pending_zoff is not None:
+                if abs(live - self.pending_zoff) < 0.0005:
+                    self.pending_zoff = None
+                    self.z_value_box.get_style_context().remove_class("glance-busy")
+                    self._show_zoff(live)
+                # else: keep showing the pending target, still pulsing
+            else:
+                self._show_zoff(live)
         pos = gs("gcode_move", "gcode_position")
         if pos:
             self.sheet_labels["z"].set_label(f"{float(pos[2]):.2f} mm")
