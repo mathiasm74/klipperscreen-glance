@@ -52,18 +52,19 @@ class Panel(ScreenPanel):
         map_wrap.pack_start(self.map, False, False, 0)
         pos_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=14)
         self.axis_vals = {}
-        for axis in ("X", "Y", "Z"):
+        # Z lives in the height map; the third readout shows live move speed
+        for name, key in (("X", "X"), ("Y", "Y"), (_("Speed"), "V")):
             cell = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6, hexpand=True)
             cell.get_style_context().add_class("glance-temp-row")
             cell.get_style_context().add_class("ph-prep")
-            n = Gtk.Label(label=axis, xalign=0)
+            n = Gtk.Label(label=name, xalign=0)
             n.get_style_context().add_class("glance-temp-name")
             v = Gtk.Label(label="—", xalign=1, hexpand=True)
             v.get_style_context().add_class("glance-temp-val")
             cell.pack_start(n, False, False, 0)
             cell.pack_end(v, True, True, 0)
             pos_row.pack_start(cell, True, True, 0)
-            self.axis_vals[axis] = v
+            self.axis_vals[key] = v
         map_wrap.pack_start(pos_row, False, False, 0)
         note = Gtk.Label(label=_("taps travel at") + f" Z ≥ {SAFE_Z:.0f}", xalign=0)
         note.get_style_context().add_class("glance-fname")
@@ -504,8 +505,11 @@ class Panel(ScreenPanel):
         if pos and not isinstance(pos, dict):
             self.pos = [float(pos[0]), float(pos[1]), float(pos[2])]
             self.z_lbl.set_label(f"{self.pos[2]:.2f}")
-            for axis, i in (("X", 0), ("Y", 1), ("Z", 2)):
+            for axis, i in (("X", 0), ("Y", 1)):
                 self.axis_vals[axis].set_label(f"{self.pos[i]:.1f}")
+            vel = self._printer.get_stat("motion_report", "live_velocity")
+            if vel is not None and not isinstance(vel, dict):
+                self.axis_vals["V"].set_label(f"{float(vel):.0f}")
             self._update_precise()
             # targets vanish once reached
             if self.xy_target is not None and \
