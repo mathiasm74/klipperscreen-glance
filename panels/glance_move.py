@@ -126,6 +126,7 @@ class Panel(ScreenPanel):
         verbs = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         verbs.set_size_request(200, -1)
         verbs.set_hexpand(False)
+        self.mesh_btn = None
         for label, cb in ((_("Home XYZ"), self.home), ("QGL", self.qgl),
                           (_("Bed mesh"), self.bed_mesh),
                           (_("Motors off"), self.motors_off)):
@@ -134,6 +135,9 @@ class Panel(ScreenPanel):
             b.set_hexpand(False)
             b.connect("clicked", cb)
             verbs.pack_start(b, False, False, 0)
+            if cb == self.bed_mesh:
+                self.mesh_btn = b
+                b.set_sensitive(False)  # meshing needs a homed printer
 
         # precise spans the full right region under both columns
         precise = Gtk.Button(label=_("Precise moves"))
@@ -570,6 +574,7 @@ class Panel(ScreenPanel):
             self.homed = homed
             self.xy_target = None
             self.z_target = None
+            self.mesh_btn.set_sensitive(all(a in homed for a in "xyz"))
             self.map.queue_draw()
             self.zmap.queue_draw()
         # live_position tracks the physical toolhead during moves (the
@@ -582,7 +587,9 @@ class Panel(ScreenPanel):
         else:
             pos = self._printer.get_stat("gcode_move", "gcode_position")
         if pos and not isinstance(pos, dict):
-            self.pos = [float(pos[0]), float(pos[1]), float(pos[2])]
+            # squash float dust so Z 0 never displays as -0.00
+            self.pos = [0.0 if abs(float(pos[i])) < 0.005 else float(pos[i])
+                        for i in range(3)]
             self.z_lbl.set_label(f"{self.pos[2]:.2f}")
             for axis, i in (("X", 0), ("Y", 1)):
                 self.axis_vals[axis].set_label(f"{self.pos[i]:.1f}")
