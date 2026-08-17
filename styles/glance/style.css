@@ -305,3 +305,10 @@ button.active label {
 .glance-precise {
     min-height: 49px;
 }
+
+/* move screen verbs: five buttons must fit above the precise bar with the
+   rail still on screen */
+.glance-verb {
+    min-height: 52px;
+    font-size: 26px;
+}

@@ -133,6 +133,7 @@ class Panel(ScreenPanel):
                           (_("Motors off"), self.motors_off)):
             b = Gtk.Button(label=label)
             b.get_style_context().add_class("glance-action")
+            b.get_style_context().add_class("glance-verb")
             b.set_hexpand(False)
             b.connect("clicked", cb)
             verbs.pack_start(b, False, False, 0)
