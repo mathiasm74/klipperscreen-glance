@@ -46,7 +46,7 @@ class Panel(ScreenPanel):
 
         # ---- left: bed map + readouts ----
         self.map = Gtk.DrawingArea()
-        self.map.set_size_request(430, 430)
+        self.map.set_size_request(422, 422)
         self.map.add_events(Gdk.EventMask.BUTTON_PRESS_MASK
                             | Gdk.EventMask.BUTTON_RELEASE_MASK
                             | Gdk.EventMask.BUTTON1_MOTION_MASK)
@@ -54,7 +54,7 @@ class Panel(ScreenPanel):
         self.map.connect("button-press-event", self.on_map_press)
         self.map.connect("motion-notify-event", self.on_map_motion)
         self.map.connect("button-release-event", self.on_map_release)
-        map_wrap = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6,
+        map_wrap = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4,
                            valign=Gtk.Align.CENTER)
         map_wrap.pack_start(self.map, False, False, 0)
         pos_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=14,
