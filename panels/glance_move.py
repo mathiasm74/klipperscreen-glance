@@ -28,6 +28,7 @@ class Panel(ScreenPanel):
         self.precise_step = 1.0
         self.speed = XY_SPEED
         self.zdrag = None
+        self.map_drag = None
         self.xy_target = None
         self.z_target = None
         self.pos = [0.0, 0.0, 0.0]
@@ -44,9 +45,13 @@ class Panel(ScreenPanel):
         # ---- left: bed map + readouts ----
         self.map = Gtk.DrawingArea()
         self.map.set_size_request(430, 430)
-        self.map.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
+        self.map.add_events(Gdk.EventMask.BUTTON_PRESS_MASK
+                            | Gdk.EventMask.BUTTON_RELEASE_MASK
+                            | Gdk.EventMask.BUTTON1_MOTION_MASK)
         self.map.connect("draw", self.on_draw)
-        self.map.connect("button-press-event", self.on_map_tap)
+        self.map.connect("button-press-event", self.on_map_press)
+        self.map.connect("motion-notify-event", self.on_map_motion)
+        self.map.connect("button-release-event", self.on_map_release)
         map_wrap = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6,
                            valign=Gtk.Align.CENTER)
         map_wrap.pack_start(self.map, False, False, 0)
@@ -298,7 +303,25 @@ class Panel(ScreenPanel):
             cr.arc(min(max(x, 6), w - 6), min(max(y, 6), h - 6), 4, 0, 6.284)
             cr.fill()
         xy_homed = "x" in self.homed and "y" in self.homed
-        if xy_homed and self.xy_target is not None:
+        if xy_homed and self.map_drag is not None:
+            dxp = min(max(self.map_drag["x"], 0), w)
+            dyp = min(max(self.map_drag["y"], 0), h)
+            cr.set_source_rgba(0.2, 0.77, 0.91, 1)
+            cr.set_line_width(2)
+            cr.arc(dxp, dyp, 10, 0, 6.284)
+            cr.stroke()
+            cr.arc(dxp, dyp, 2, 0, 6.284)
+            cr.fill()
+            bx = dxp / w * self.bed_x
+            by = (1 - dyp / h) * self.bed_y
+            cr.select_font_face("Space Grotesk")
+            cr.set_font_size(22)
+            label = f"{bx:.0f} · {by:.0f}"
+            tx = dxp + 18 if dxp < w - 110 else dxp - 110
+            ty = dyp - 14 if dyp > 40 else dyp + 30
+            cr.move_to(tx, ty)
+            cr.show_text(label)
+        if xy_homed and self.xy_target is not None and self.map_drag is None:
             tx, ty = self.xy_target
             x = tx / self.bed_x * w
             y = h - ty / self.bed_y * h
@@ -334,25 +357,44 @@ class Panel(ScreenPanel):
 
     # ---- interaction ---------------------------------------------------------
 
-    def on_map_tap(self, da, event):
-        # never act on taps while the precise modal is up: on some input
-        # paths the press reaches the map through the backdrop
+    def _map_bed_coords(self, x, y, w, h, snap):
+        bx = x / w * self.bed_x
+        by = (1 - y / h) * self.bed_y
+        if snap:
+            snap_r = 15 / w * self.bed_x
+            for sx, sy in ((0, 0), (self.bed_x, 0), (0, self.bed_y),
+                           (self.bed_x, self.bed_y), (self.bed_x / 2, self.bed_y / 2)):
+                if abs(bx - sx) < snap_r and abs(by - sy) < snap_r:
+                    return sx, sy
+        return (min(max(bx, 0), self.bed_x), min(max(by, 0), self.bed_y))
+
+    def on_map_press(self, da, event):
+        # never act while the precise modal is up: on some input paths the
+        # press reaches the map through the backdrop
         if self.backdrop.get_visible():
             return True
         if "x" not in self.homed or "y" not in self.homed:
             return True
+        self.map_drag = {"x0": event.x, "y0": event.y, "x": event.x, "y": event.y}
+        da.queue_draw()
+        return True
+
+    def on_map_motion(self, da, event):
+        if self.map_drag is not None:
+            self.map_drag["x"] = event.x
+            self.map_drag["y"] = event.y
+            da.queue_draw()
+        return True
+
+    def on_map_release(self, da, event):
+        if self.map_drag is None:
+            return True
         w = da.get_allocated_width()
         h = da.get_allocated_height()
-        bx = event.x / w * self.bed_x
-        by = (1 - event.y / h) * self.bed_y
-        snap_r = 15 / w * self.bed_x
-        for sx, sy in ((0, 0), (self.bed_x, 0), (0, self.bed_y),
-                       (self.bed_x, self.bed_y), (self.bed_x / 2, self.bed_y / 2)):
-            if abs(bx - sx) < snap_r and abs(by - sy) < snap_r:
-                bx, by = sx, sy
-                break
-        bx = min(max(bx, 0), self.bed_x)
-        by = min(max(by, 0), self.bed_y)
+        x0, y0 = self.map_drag["x0"], self.map_drag["y0"]
+        self.map_drag = None
+        tapped = abs(event.x - x0) <= 8 and abs(event.y - y0) <= 8
+        bx, by = self._map_bed_coords(event.x, event.y, w, h, snap=tapped)
         script = "G90\n"
         if self.pos[2] < SAFE_Z and "z" in self.homed:
             script += f"G0 Z{SAFE_Z} F{Z_SPEED * 60}\n"
