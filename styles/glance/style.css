@@ -303,7 +303,7 @@ button.active label {
 /* precise button under the z map: height tuned so the two maps' bottom
    edges align */
 .glance-precise {
-    min-height: 56px;
+    min-height: 34px;
 }
 
 /* move screen verbs: five buttons must fit above the precise bar with the
