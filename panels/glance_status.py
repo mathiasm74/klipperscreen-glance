@@ -81,9 +81,44 @@ class Panel(ScreenPanel):
         self.bed_row, self.bed_val = self._temp_row(_("Bed"))
         self.speed_row, self.speed_val = self._factor_row(_("Speed"), self.adjust_speed)
         self.flow_row, self.flow_val = self._factor_row(_("Flow"), self.adjust_flow)
-        self.zoff_row, self.zoff_val = self._factor_row(_("Z offset"), self.adjust_zoffset_row)
-        self.zoff_val.set_size_request(116, -1)
-        self.zoff_val.set_label("+0.000")
+        # z-offset row: arrows bracket the hundredths digit (the 0.01 step),
+        # and the buttons are the matching up/down arrows
+        self.zoff_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
+        self.zoff_row.get_style_context().add_class("glance-temp-row")
+        zname = Gtk.Label(label=_("Z offset"), xalign=0, hexpand=True)
+        zname.get_style_context().add_class("glance-temp-name")
+        self.zoff_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.zoff_box.set_valign(Gtk.Align.CENTER)
+        self.zoff_prefix = Gtk.Label(label="+0.")
+        self.zoff_prefix.get_style_context().add_class("glance-temp-val")
+        self.zoff_box.pack_start(self.zoff_prefix, False, False, 0)
+        self.zoff_digits = []
+        for i in range(3):
+            d = Gtk.Label(label="0")
+            d.get_style_context().add_class("glance-temp-val")
+            if i == 1:
+                col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+                up, down = Gtk.Label(label="▲"), Gtk.Label(label="▼")
+                for a in (up, down):
+                    a.get_style_context().add_class("glance-z-arrow")
+                col.pack_start(up, False, False, 0)
+                col.pack_start(d, False, False, 0)
+                col.pack_start(down, False, False, 0)
+                self.zoff_box.pack_start(col, False, False, 0)
+            else:
+                self.zoff_box.pack_start(d, False, False, 0)
+            self.zoff_digits.append(d)
+        zdown = Gtk.Button(label="↓")
+        zup = Gtk.Button(label="↑")
+        for b, sign in ((zdown, -1), (zup, 1)):
+            b.get_style_context().add_class("glance-step")
+            b.set_hexpand(False)
+            b.set_valign(Gtk.Align.CENTER)
+            b.connect("clicked", self.adjust_zoffset_row, sign)
+        self.zoff_row.pack_start(zname, True, True, 0)
+        self.zoff_row.pack_end(zup, False, False, 0)
+        self.zoff_row.pack_end(self.zoff_box, False, False, 6)
+        self.zoff_row.pack_end(zdown, False, False, 0)
         # paused-state replacements for the factor rows (same footprint):
         # quick inline extrude/retract, and a door into the full extrude panel
         self.btn_unload = Gtk.Button(label=_("Unload"))
@@ -376,7 +411,7 @@ class Panel(ScreenPanel):
                 if self.pending_zoff is not None:
                     if abs(live - self.pending_zoff) < 0.0005:
                         self.pending_zoff = None
-                        self.zoff_val.get_style_context().remove_class("glance-busy")
+                        self.zoff_box.get_style_context().remove_class("glance-busy")
                         self._show_zoff(live)
                 else:
                     self._show_zoff(live)
@@ -440,7 +475,7 @@ class Panel(ScreenPanel):
             self._set_busy(b, False)
         # queued offset taps die with the job state (e.g. cancel flushes them)
         self.pending_zoff = None
-        self.zoff_val.get_style_context().remove_class("glance-busy")
+        self.zoff_box.get_style_context().remove_class("glance-busy")
         self.content.show_all()
         self._show_buttons()
 
@@ -699,7 +734,10 @@ class Panel(ScreenPanel):
         self._screen._go_to_submenu(widget, "")
 
     def _show_zoff(self, value):
-        self.zoff_val.set_label(f"{value:+.3f}")
+        s = f"{value:+.3f}"
+        self.zoff_prefix.set_label(s[:-3])
+        for i, d in enumerate(self.zoff_digits):
+            d.set_label(s[-3 + i])
 
     def adjust_zoffset_row(self, widget, direction):
         # optimistic: during PRINT_START's heating waits the gcode queue is
@@ -711,7 +749,7 @@ class Panel(ScreenPanel):
             float(offset[2]) if offset and not isinstance(offset, dict) else 0.0)
         self.pending_zoff = round(cur + delta, 3)
         self._show_zoff(self.pending_zoff)
-        self.zoff_val.get_style_context().add_class("glance-busy")
+        self.zoff_box.get_style_context().add_class("glance-busy")
         self._screen._ws.klippy.gcode_script(
             f"SET_GCODE_OFFSET Z_ADJUST={delta:+.3f} MOVE=1")
 
