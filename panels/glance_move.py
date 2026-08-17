@@ -316,9 +316,11 @@ class Panel(ScreenPanel):
             by = (1 - dyp / h) * self.bed_y
             cr.select_font_face("Space Grotesk")
             cr.set_font_size(22)
-            label = f"{bx:.0f} · {by:.0f}"
-            tx = dxp + 18 if dxp < w - 110 else dxp - 110
-            ty = dyp - 14 if dyp > 40 else dyp + 30
+            label = f"X {bx:.0f} · Y {by:.0f}"
+            ext = cr.text_extents(label)
+            # well clear of the fingertip: up and to the side
+            tx = dxp + 36 if dxp < w - ext.width - 44 else dxp - ext.width - 36
+            ty = dyp - 34 if dyp > 64 else dyp + 52
             cr.move_to(tx, ty)
             cr.show_text(label)
         if xy_homed and self.xy_target is not None and self.map_drag is None:
