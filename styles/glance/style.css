@@ -294,3 +294,8 @@ button.active label {
     font-size: 28px;
     font-weight: bold;
 }
+
+/* move screen: tighter left padding than the hero screens */
+.glance-move-main {
+    padding: 8px 10px 4px 10px;
+}

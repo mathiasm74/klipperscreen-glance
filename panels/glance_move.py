@@ -32,6 +32,10 @@ class Panel(ScreenPanel):
         self.max_x = self._axis_max("stepper_x", 300)
         self.max_y = self._axis_max("stepper_y", 300)
         self.max_z = self._axis_max("stepper_z", 280)
+        # travel exceeds the physical plate (Y 316 vs 300 on this machine);
+        # the map represents the BED, so its center dot is the true bed center
+        self.bed_x = min(self.max_x, 300.0)
+        self.bed_y = min(self.max_y, 300.0)
 
         # ---- left: bed map + readouts ----
         self.map = Gtk.DrawingArea()
@@ -124,7 +128,7 @@ class Panel(ScreenPanel):
 
         main = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True,
                        vexpand=True, spacing=16)
-        main.get_style_context().add_class("glance-hero")
+        main.get_style_context().add_class("glance-move-main")
         main.pack_start(map_wrap, False, False, 0)
         main.pack_start(zcol, False, False, 0)
         main.pack_end(verbs, False, False, 0)
@@ -276,16 +280,16 @@ class Panel(ScreenPanel):
         cr.rectangle(0.5, 0.5, w - 1, h - 1)
         cr.stroke()
         cr.set_source_rgba(0.2, 0.77, 0.91, 0.5)
-        for sx, sy in ((0, 0), (self.max_x, 0), (0, self.max_y),
-                       (self.max_x, self.max_y), (self.max_x / 2, self.max_y / 2)):
-            x = sx / self.max_x * w
-            y = h - sy / self.max_y * h
+        for sx, sy in ((0, 0), (self.bed_x, 0), (0, self.bed_y),
+                       (self.bed_x, self.bed_y), (self.bed_x / 2, self.bed_y / 2)):
+            x = sx / self.bed_x * w
+            y = h - sy / self.bed_y * h
             cr.arc(min(max(x, 6), w - 6), min(max(y, 6), h - 6), 4, 0, 6.284)
             cr.fill()
         xy_homed = "x" in self.homed and "y" in self.homed
         if xy_homed:
-            x = self.pos[0] / self.max_x * w
-            y = h - self.pos[1] / self.max_y * h
+            x = min(max(self.pos[0], 0), self.bed_x) / self.bed_x * w
+            y = h - min(max(self.pos[1], 0), self.bed_y) / self.bed_y * h
             cr.set_source_rgba(0.91, 0.92, 0.93, 0.25)
             cr.set_line_width(1)
             cr.move_to(x, 0); cr.line_to(x, h)
@@ -314,16 +318,16 @@ class Panel(ScreenPanel):
             return True
         w = da.get_allocated_width()
         h = da.get_allocated_height()
-        bx = event.x / w * self.max_x
-        by = (1 - event.y / h) * self.max_y
-        snap_r = 15 / w * self.max_x
-        for sx, sy in ((0, 0), (self.max_x, 0), (0, self.max_y),
-                       (self.max_x, self.max_y), (self.max_x / 2, self.max_y / 2)):
+        bx = event.x / w * self.bed_x
+        by = (1 - event.y / h) * self.bed_y
+        snap_r = 15 / w * self.bed_x
+        for sx, sy in ((0, 0), (self.bed_x, 0), (0, self.bed_y),
+                       (self.bed_x, self.bed_y), (self.bed_x / 2, self.bed_y / 2)):
             if abs(bx - sx) < snap_r and abs(by - sy) < snap_r:
                 bx, by = sx, sy
                 break
-        bx = min(max(bx, 0), self.max_x)
-        by = min(max(by, 0), self.max_y)
+        bx = min(max(bx, 0), self.bed_x)
+        by = min(max(by, 0), self.bed_y)
         script = "G90\n"
         if self.pos[2] < SAFE_Z and "z" in self.homed:
             script += f"G0 Z{SAFE_Z} F{Z_SPEED * 60}\n"
