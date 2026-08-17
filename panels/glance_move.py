@@ -54,22 +54,29 @@ class Panel(ScreenPanel):
                           homogeneous=True)
         self.axis_vals = {}
         # Z lives in the height map; the third cell shows the set travel speed
-        # (no name label - the value is self-describing, and equal cell widths
-        # need the naturals to stay comparable)
-        for name, key in (("X", "X"), ("Y", "Y"), (None, "V")):
+        for name, key in (("X", "X"), ("Y", "Y")):
             cell = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6, hexpand=True)
             cell.get_style_context().add_class("glance-temp-row")
             cell.get_style_context().add_class("ph-prep")
-            if name is not None:
-                n = Gtk.Label(label=name, xalign=0)
-                n.get_style_context().add_class("glance-temp-name")
-                cell.pack_start(n, False, False, 0)
+            n = Gtk.Label(label=name, xalign=0)
+            n.get_style_context().add_class("glance-temp-name")
+            cell.pack_start(n, False, False, 0)
             v = Gtk.Label(label="—", xalign=1, hexpand=True)
             v.get_style_context().add_class("glance-temp-val")
             cell.pack_end(v, True, True, 0)
             pos_row.pack_start(cell, True, True, 0)
             self.axis_vals[key] = v
-        self.axis_vals["V"].set_label(f"{XY_SPEED:g} mm/s")
+        vcell = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6, hexpand=True)
+        vcell.get_style_context().add_class("glance-temp-row")
+        vcell.get_style_context().add_class("ph-prep")
+        vval = Gtk.Label(label=f"{XY_SPEED:g}", xalign=1, hexpand=True)
+        vval.get_style_context().add_class("glance-temp-val")
+        vunit = Gtk.Label(label="mm/s", xalign=0)
+        vunit.get_style_context().add_class("glance-temp-name")
+        vcell.pack_end(vunit, False, False, 0)
+        vcell.pack_end(vval, True, True, 0)
+        pos_row.pack_start(vcell, True, True, 0)
+        self.axis_vals["V"] = vval
         map_wrap.pack_start(pos_row, False, False, 0)
         note = Gtk.Label(label=_("taps travel at") + f" Z ≥ {SAFE_Z:.0f}", xalign=0)
         note.get_style_context().add_class("glance-fname")
