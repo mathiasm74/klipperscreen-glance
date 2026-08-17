@@ -16,7 +16,8 @@ from ks_includes.screen_panel import ScreenPanel
 PRECISE_STEPS = (0.01, 0.1, 1, 10)
 SAFE_Z = 15.0
 Z_SPEED = 15   # mm/s
-XY_SPEED = 150  # mm/s for map taps and precise XY nudges
+XY_SPEED = 150  # default; tap the readout to cycle
+XY_SPEEDS = (50, 150, 300)
 Z_LINES = (0, 10, 50, 75, 100)
 Z_MAP_MAX = 110.0
 Z_PAD = 14  # px margin above/below the height-map scale
@@ -81,7 +82,10 @@ class Panel(ScreenPanel):
         vunit.get_style_context().add_class("glance-temp-name")
         vcell.pack_end(vunit, False, False, 0)
         vcell.pack_end(vval, True, True, 0)
-        pos_row.pack_start(vcell, True, True, 0)
+        vtap = Gtk.EventBox()
+        vtap.add(vcell)
+        vtap.connect("button-release-event", self.cycle_speed)
+        pos_row.pack_start(vtap, True, True, 0)
         self.axis_vals["V"] = vval
         map_wrap.pack_start(pos_row, False, False, 0)
         note = Gtk.Label(label=_("taps travel at") + f" Z ≥ {SAFE_Z:.0f}", xalign=0)
@@ -264,7 +268,7 @@ class Panel(ScreenPanel):
     def precise_jog(self, widget, axis, sign):
         if axis.lower() not in self.homed:
             return
-        speed = Z_SPEED if axis == "Z" else XY_SPEED
+        speed = Z_SPEED if axis == "Z" else self.speed
         self._screen._ws.klippy.gcode_script(
             f"G91\nG0 {axis}{self.precise_step * sign:g} F{speed * 60}\nG90")
 
@@ -361,6 +365,15 @@ class Panel(ScreenPanel):
         return False
 
     # ---- interaction ---------------------------------------------------------
+
+    def cycle_speed(self, widget=None, event=None):
+        try:
+            idx = XY_SPEEDS.index(self.speed)
+        except ValueError:
+            idx = 1
+        self.speed = XY_SPEEDS[(idx + 1) % len(XY_SPEEDS)]
+        self.axis_vals["V"].set_label(f"{self.speed:g}")
+        return True
 
     def _map_bed_coords(self, x, y, w, h, snap):
         bx = x / w * self.bed_x
