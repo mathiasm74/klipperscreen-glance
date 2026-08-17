@@ -12,20 +12,22 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gdk, Gtk
 from ks_includes.screen_panel import ScreenPanel
 
-STEPS = (0.1, 1, 10)
 PRECISE_STEPS = (0.01, 0.1, 1, 10)
-SPEEDS = (50, 150, 300)
 SAFE_Z = 15.0
-Z_SPEED = 15  # mm/s
+Z_SPEED = 15   # mm/s
+XY_SPEED = 150  # mm/s for map taps and precise XY nudges
+Z_LINES = (0, 10, 50, 75, 100)
+Z_MAP_MAX = 110.0
+Z_PAD = 14  # px margin above/below the height-map scale
 
 
 class Panel(ScreenPanel):
     def __init__(self, screen, title, **kwargs):
         title = title or _("Move")
         super().__init__(screen, title)
-        self.step = 1.0
         self.precise_step = 1.0
-        self.speed = 150
+        self.speed = XY_SPEED
+        self.zdrag = None
         self.pos = [0.0, 0.0, 0.0]
         self.homed = ""
 
@@ -82,36 +84,18 @@ class Panel(ScreenPanel):
         zhero.pack_end(self.z_lbl, True, True, 0)
         zcol.pack_start(zhero, False, False, 0)
 
-        chipgrid = Gtk.Grid(row_spacing=8, column_spacing=8,
-                            column_homogeneous=True, row_homogeneous=True)
-        for i, (label, z) in enumerate((("Z 0", 0), ("10", 10), ("50", 50), ("100", 100))):
-            c = Gtk.Button(label=label)
-            c.get_style_context().add_class("glance-row-btn")
-            c.set_hexpand(False)
-            c.connect("clicked", self.z_goto, z)
-            chipgrid.attach(c, i % 2, i // 2, 1, 1)
-        zcol.pack_start(chipgrid, False, False, 0)
-
-        jogrow = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        for glyph, d in (("▼", -1), ("▲", 1)):
-            b = Gtk.Button(label=glyph)
-            b.get_style_context().add_class("glance-jog")
-            b.set_hexpand(True)
-            b.connect("clicked", self.z_jog, d)
-            jogrow.pack_start(b, True, True, 0)
-        zcol.pack_start(jogrow, False, False, 0)
-
-        steplbl = Gtk.Label(label=_("Z step · mm"), xalign=0)
-        steplbl.get_style_context().add_class("glance-temp-name")
-        zcol.pack_start(steplbl, False, False, 0)
-        self.step_sel = self._segmented([f"{s:g}" for s in STEPS], self.set_step, 1)
-        zcol.pack_start(self.step_sel, False, False, 0)
-
-        spdlbl = Gtk.Label(label=_("Travel · mm/s"), xalign=0)
-        spdlbl.get_style_context().add_class("glance-temp-name")
-        self.speed_sel = self._segmented([str(s) for s in SPEEDS], self.set_speed, 1)
-        zcol.pack_end(self.speed_sel, False, False, 0)
-        zcol.pack_end(spdlbl, False, False, 6)
+        # vertical height map: tap near a line to snap there, or press and
+        # drag - Z follows the exact height under your finger on release
+        self.zmap = Gtk.DrawingArea()
+        self.zmap.set_size_request(190, -1)
+        self.zmap.add_events(Gdk.EventMask.BUTTON_PRESS_MASK
+                             | Gdk.EventMask.BUTTON_RELEASE_MASK
+                             | Gdk.EventMask.BUTTON1_MOTION_MASK)
+        self.zmap.connect("draw", self.on_zmap_draw)
+        self.zmap.connect("button-press-event", self.on_zmap_press)
+        self.zmap.connect("motion-notify-event", self.on_zmap_motion)
+        self.zmap.connect("button-release-event", self.on_zmap_release)
+        zcol.pack_start(self.zmap, True, True, 0)
 
         # ---- right: large verbs ----
         verbs = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
@@ -247,7 +231,7 @@ class Panel(ScreenPanel):
     def precise_jog(self, widget, axis, sign):
         if axis.lower() not in self.homed:
             return
-        speed = Z_SPEED if axis == "Z" else self.speed
+        speed = Z_SPEED if axis == "Z" else XY_SPEED
         self._screen._ws.klippy.gcode_script(
             f"G91\nG0 {axis}{self.precise_step * sign:g} F{speed * 60}\nG90")
 
@@ -335,25 +319,109 @@ class Panel(ScreenPanel):
         self._screen._ws.klippy.gcode_script(script)
         return True
 
-    def set_step(self, widget, idx, buttons):
-        self.step = STEPS[idx]
-        self._mark_selected(widget, buttons)
-
-    def set_speed(self, widget, idx, buttons):
-        self.speed = SPEEDS[idx]
-        self._mark_selected(widget, buttons)
-
     @staticmethod
     def _mark_selected(widget, buttons):
         for b in buttons:
             b.get_style_context().remove_class("horizontal_togglebuttons_active")
         widget.get_style_context().add_class("horizontal_togglebuttons_active")
 
-    def z_jog(self, widget, sign):
+    # ---- height map ----------------------------------------------------------
+
+    @staticmethod
+    def _zmap_y_to_z(y, h):
+        span = max(h - 2 * Z_PAD, 1)
+        frac = (h - Z_PAD - y) / span
+        return min(max(frac, 0.0), 1.0) * Z_MAP_MAX
+
+    @staticmethod
+    def _zmap_z_to_y(z, h):
+        span = max(h - 2 * Z_PAD, 1)
+        return h - Z_PAD - min(max(z / Z_MAP_MAX, 0.0), 1.0) * span
+
+    def on_zmap_draw(self, da, cr):
+        w = da.get_allocated_width()
+        h = da.get_allocated_height()
+        cr.set_source_rgb(0.063, 0.078, 0.106)
+        cr.rectangle(0, 0, w, h)
+        cr.fill()
+        cr.set_source_rgba(0.23, 0.26, 0.33, 1)
+        cr.set_line_width(1)
+        cr.rectangle(0.5, 0.5, w - 1, h - 1)
+        cr.stroke()
+        cr.select_font_face("Space Grotesk")
+        cr.set_font_size(16)
+        for v in Z_LINES:
+            y = self._zmap_z_to_y(v, h)
+            label = f"{v:g}"
+            ext = cr.text_extents(label)
+            cx = w / 2
+            gap = ext.width / 2 + 10
+            cr.set_source_rgba(1, 1, 1, 0.18)
+            cr.move_to(8, y); cr.line_to(cx - gap, y)
+            cr.move_to(cx + gap, y); cr.line_to(w - 8, y)
+            cr.stroke()
+            cr.set_source_rgba(0.55, 0.58, 0.65, 1)
+            cr.move_to(cx - ext.width / 2, y + ext.height / 2 - 1)
+            cr.show_text(label)
         if "z" not in self.homed:
-            return
-        self._screen._ws.klippy.gcode_script(
-            f"G91\nG0 Z{self.step * sign:g} F{Z_SPEED * 60}\nG90")
+            cr.set_source_rgba(0, 0, 0, 0.55)
+            cr.rectangle(0, 0, w, h)
+            cr.fill()
+            return False
+        # current Z marker (clamped into the scale)
+        y = self._zmap_z_to_y(self.pos[2], h)
+        cr.set_source_rgba(0.25, 0.84, 0.41, 0.9)
+        cr.set_line_width(2)
+        cr.move_to(4, y); cr.line_to(w - 4, y)
+        cr.stroke()
+        cr.arc(w - 12, y, 5, 0, 6.284)
+        cr.fill()
+        # drag target marker with live value
+        if self.zdrag is not None:
+            dy = min(max(self.zdrag["y"], Z_PAD), h - Z_PAD)
+            dz = self._zmap_y_to_z(dy, h)
+            cr.set_source_rgba(0.2, 0.77, 0.91, 1)
+            cr.set_line_width(2)
+            cr.move_to(4, dy); cr.line_to(w - 4, dy)
+            cr.stroke()
+            label = f"{dz:.1f}"
+            ext = cr.text_extents(label)
+            cr.set_font_size(22)
+            cr.move_to(10, dy - 8 if dy > 40 else dy + 26)
+            cr.show_text(label)
+        return False
+
+    def on_zmap_press(self, da, event):
+        if "z" not in self.homed:
+            return True
+        self.zdrag = {"y0": event.y, "y": event.y}
+        da.queue_draw()
+        return True
+
+    def on_zmap_motion(self, da, event):
+        if self.zdrag is not None:
+            self.zdrag["y"] = event.y
+            da.queue_draw()
+        return True
+
+    def on_zmap_release(self, da, event):
+        if self.zdrag is None:
+            return True
+        h = da.get_allocated_height()
+        y0, y = self.zdrag["y0"], event.y
+        self.zdrag = None
+        z = self._zmap_y_to_z(min(max(y, Z_PAD), h - Z_PAD), h)
+        if abs(y - y0) <= 8:
+            # a tap: snap to the nearest reference line when close to one
+            snap_z = 14 / max(h - 2 * Z_PAD, 1) * Z_MAP_MAX
+            for v in Z_LINES:
+                if abs(z - v) <= snap_z:
+                    z = float(v)
+                    break
+        z = min(max(z, 0.0), min(Z_MAP_MAX, self.max_z))
+        self.z_goto(None, z)
+        da.queue_draw()
+        return True
 
     def z_goto(self, widget, z):
         if "z" not in self.homed:
@@ -381,6 +449,7 @@ class Panel(ScreenPanel):
         if isinstance(homed, str) and homed != self.homed:
             self.homed = homed
             self.map.queue_draw()
+            self.zmap.queue_draw()
         pos = self._printer.get_stat("gcode_move", "gcode_position")
         if pos and not isinstance(pos, dict):
             self.pos = [float(pos[0]), float(pos[1]), float(pos[2])]
@@ -389,3 +458,4 @@ class Panel(ScreenPanel):
                 self.axis_vals[axis].set_label(f"{self.pos[i]:.1f}")
             self._update_precise()
             self.map.queue_draw()
+            self.zmap.queue_draw()
