@@ -98,12 +98,6 @@ class Panel(ScreenPanel):
         self.zmap.connect("motion-notify-event", self.on_zmap_motion)
         self.zmap.connect("button-release-event", self.on_zmap_release)
         zcol.pack_start(self.zmap, True, True, 0)
-        precise = Gtk.Button(label=_("Precise…"))
-        precise.get_style_context().add_class("glance-action")
-        precise.get_style_context().add_class("glance-precise")
-        precise.set_hexpand(False)
-        precise.connect("clicked", self.open_precise)
-        zcol.pack_end(precise, False, False, 0)
 
         # ---- right: large verbs ----
         verbs = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
@@ -115,14 +109,27 @@ class Panel(ScreenPanel):
             b.get_style_context().add_class("glance-action")
             b.set_hexpand(False)
             b.connect("clicked", cb)
-            verbs.pack_start(b, True, True, 0)
+            verbs.pack_start(b, False, False, 0)
+
+        # precise spans the full right region under both columns
+        precise = Gtk.Button(label=_("Precise…"))
+        precise.get_style_context().add_class("glance-action")
+        precise.get_style_context().add_class("glance-precise")
+        precise.set_hexpand(True)
+        precise.connect("clicked", self.open_precise)
+
+        top_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=16)
+        top_row.pack_start(zcol, False, False, 0)
+        top_row.pack_end(verbs, False, False, 0)
+        right_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        right_box.pack_start(top_row, True, True, 0)
+        right_box.pack_end(precise, False, False, 0)
 
         main = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True,
                        vexpand=True, spacing=16)
         main.get_style_context().add_class("glance-move-main")
         main.pack_start(map_wrap, False, False, 0)
-        main.pack_start(zcol, False, False, 0)
-        main.pack_end(verbs, False, False, 0)
+        main.pack_start(right_box, True, True, 0)
 
         self.rail = Gtk.ProgressBar(hexpand=True)
         self.rail.get_style_context().add_class("glance-rail")
@@ -315,6 +322,10 @@ class Panel(ScreenPanel):
     # ---- interaction ---------------------------------------------------------
 
     def on_map_tap(self, da, event):
+        # never act on taps while the precise modal is up: on some input
+        # paths the press reaches the map through the backdrop
+        if self.backdrop.get_visible():
+            return True
         if "x" not in self.homed or "y" not in self.homed:
             return True
         w = da.get_allocated_width()
@@ -418,6 +429,8 @@ class Panel(ScreenPanel):
         return False
 
     def on_zmap_press(self, da, event):
+        if self.backdrop.get_visible():
+            return True
         if "z" not in self.homed:
             return True
         self.zdrag = {"y0": event.y, "y": event.y}
