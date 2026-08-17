@@ -85,6 +85,7 @@ class Panel(ScreenPanel):
         # and the buttons are the matching up/down arrows
         self.zoff_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
         self.zoff_row.get_style_context().add_class("glance-temp-row")
+        self.zoff_row.get_style_context().add_class("glance-zoff-row")
         zname = Gtk.Label(label=_("Z offset"), xalign=0, hexpand=True)
         zname.get_style_context().add_class("glance-temp-name")
         self.zoff_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
