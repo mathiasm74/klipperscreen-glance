@@ -175,6 +175,8 @@ class Panel(ScreenPanel):
         self.overlay.add(inner)
         self.backdrop = self._build_precise()
         self.overlay.add_overlay(self.backdrop)
+        self.zcal_backdrop = self._build_zcal()
+        self.overlay.add_overlay(self.zcal_backdrop)
         self.content.pack_start(self.overlay, True, True, 0)
         for w in (self.root, self.rail):
             w.get_style_context().add_class("ph-prep")
@@ -396,7 +398,7 @@ class Panel(ScreenPanel):
     def on_map_press(self, da, event):
         # never act while the precise modal is up: on some input paths the
         # press reaches the map through the backdrop
-        if self.backdrop.get_visible():
+        if self.backdrop.get_visible() or self.zcal_backdrop.get_visible():
             return True
         if "x" not in self.homed or "y" not in self.homed:
             return True
@@ -511,7 +513,7 @@ class Panel(ScreenPanel):
         return False
 
     def on_zmap_press(self, da, event):
-        if self.backdrop.get_visible():
+        if self.backdrop.get_visible() or self.zcal_backdrop.get_visible():
             return True
         if "z" not in self.homed:
             return True
@@ -560,15 +562,108 @@ class Panel(ScreenPanel):
     def bed_mesh(self, widget):
         self._screen._ws.klippy.gcode_script("BED_MESH_CALIBRATE")
 
+    # ---- z-offset calibration modal -----------------------------------------
+
+    def _build_zcal(self):
+        backdrop = Gtk.EventBox()
+        backdrop.get_style_context().add_class("glance-backdrop")
+        backdrop.connect("button-release-event", self.close_zcal)
+        card = Gtk.EventBox()
+        card.connect("button-release-event", lambda w, e: True)
+        card.set_halign(Gtk.Align.CENTER)
+        card.set_valign(Gtk.Align.CENTER)
+        card.set_size_request(int(self._screen.width * 0.6), -1)
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=14)
+        box.get_style_context().add_class("glance-sheet")
+        box.get_style_context().add_class("ph-prep")
+        card.add(box)
+
+        info = Gtk.Label(label=_("Clear the bed, then Start: the nozzle homes "
+                                 "and moves to bed center at Z 0.10.\n"
+                                 "Adjust until a paper drags, then Save."),
+                         xalign=0, wrap=True)
+        info.get_style_context().add_class("glance-temp-name")
+        box.pack_start(info, False, False, 0)
+
+        vrow = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        vrow.get_style_context().add_class("glance-temp-row")
+        vname = Gtk.Label(label=_("Z offset"), xalign=0, hexpand=True)
+        vname.get_style_context().add_class("glance-temp-name")
+        self.zcal_val = Gtk.Label(label="—")
+        self.zcal_val.get_style_context().add_class("glance-temp-val")
+        self.zcal_down = Gtk.Button(label="↓")
+        self.zcal_up = Gtk.Button(label="↑")
+        for b, sign in ((self.zcal_down, -1), (self.zcal_up, 1)):
+            b.get_style_context().add_class("glance-z-step")
+            b.set_hexpand(False)
+            b.set_valign(Gtk.Align.CENTER)
+            b.set_sensitive(False)
+            b.connect("clicked", self.zcal_adjust, sign)
+        vrow.pack_start(vname, True, True, 0)
+        vrow.pack_end(self.zcal_up, False, False, 0)
+        vrow.pack_end(self.zcal_val, False, False, 6)
+        vrow.pack_end(self.zcal_down, False, False, 0)
+        box.pack_start(vrow, False, False, 0)
+
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        self.zcal_start = Gtk.Button(label=_("Start"))
+        self.zcal_start.connect("clicked", self.zcal_begin)
+        self.zcal_save = Gtk.Button(label=_("Save"))
+        self.zcal_save.get_style_context().add_class("glance-start-btn")
+        self.zcal_save.set_sensitive(False)
+        self.zcal_save.connect("clicked", self.zcal_do_save)
+        close = Gtk.Button(label=_("Close"))
+        close.connect("clicked", self.close_zcal)
+        for b in (self.zcal_start, self.zcal_save, close):
+            b.get_style_context().add_class("glance-row-btn")
+            b.set_hexpand(False)
+            row.pack_start(b, True, True, 0)
+        box.pack_start(row, False, False, 0)
+
+        backdrop.add(card)
+        backdrop.show_all()
+        backdrop.hide()
+        backdrop.set_no_show_all(True)
+        return backdrop
+
     def z_calibrate(self, widget):
-        # stock guided z-offset calibration flow (paper test, +/- and accept)
-        self._screen.show_panel("zcalibrate")
+        self.zcal_start.set_sensitive(True)
+        for b in (self.zcal_down, self.zcal_up, self.zcal_save):
+            b.set_sensitive(False)
+        self.zcal_backdrop.show()
+
+    def zcal_begin(self, widget):
+        script = ""
+        if not all(a in self.homed for a in "xyz"):
+            script += "G28\n"
+        script += (f"G90\nG0 X{self.bed_x / 2:.1f} Y{self.bed_y / 2:.1f} F9000\n"
+                   f"G0 Z0.1 F{Z_SPEED * 60}")
+        self._screen._ws.klippy.gcode_script(script)
+        widget.set_sensitive(False)
+        for b in (self.zcal_down, self.zcal_up, self.zcal_save):
+            b.set_sensitive(True)
+
+    def zcal_adjust(self, widget, sign):
+        self._screen._ws.klippy.gcode_script(
+            f"SET_GCODE_OFFSET Z_ADJUST={0.01 * sign:+.3f} MOVE=1")
+
+    def zcal_do_save(self, widget):
+        self._screen._ws.klippy.gcode_script("Z_OFFSET_APPLY_PROBE")
+        widget.set_sensitive(False)
+
+    def close_zcal(self, widget=None, event=None):
+        if self.zcal_backdrop.get_visible() and not self.zcal_start.get_sensitive():
+            # calibration motion happened: park Z back up
+            self._screen._ws.klippy.gcode_script(f"G90\nG0 Z15 F{Z_SPEED * 60}")
+        self.zcal_backdrop.hide()
+        return True
 
     def motors_off(self, widget):
         self._screen._ws.klippy.gcode_script("M84")
 
     def deactivate(self):
         self.backdrop.hide()
+        self.zcal_backdrop.hide()
 
     # ---- data ----------------------------------------------------------------
 
@@ -607,5 +702,9 @@ class Panel(ScreenPanel):
                 self.xy_target = None
             if self.z_target is not None and abs(self.pos[2] - self.z_target) < 0.3:
                 self.z_target = None
+            if self.zcal_backdrop.get_visible():
+                offset = self._printer.get_stat("gcode_move", "homing_origin")
+                if offset and not isinstance(offset, dict):
+                    self.zcal_val.set_label(f"{float(offset[2]):+.3f}")
             self.map.queue_draw()
             self.zmap.queue_draw()
