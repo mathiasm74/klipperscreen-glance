@@ -101,14 +101,22 @@ class Panel(ScreenPanel):
             d = Gtk.Label(label="0")
             d.get_style_context().add_class("glance-temp-val")
             if i == 1:
-                col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-                up, down = Gtk.Label(label="▲"), Gtk.Label(label="▼")
-                for a in (up, down):
+                # arrows as overlay children: they draw above/below the digit
+                # but cost zero height, so full-size arrows fit in a fixed box
+                holder = Gtk.Box()
+                holder.set_size_request(-1, 54)
+                d.set_valign(Gtk.Align.CENTER)
+                holder.add(d)
+                ov = Gtk.Overlay()
+                ov.add(holder)
+                for glyph, va in (("▲", Gtk.Align.START), ("▼", Gtk.Align.END)):
+                    a = Gtk.Label(label=glyph)
                     a.get_style_context().add_class("glance-z-arrow")
-                col.pack_start(up, False, False, 0)
-                col.pack_start(d, False, False, 0)
-                col.pack_start(down, False, False, 0)
-                self.zoff_box.pack_start(col, False, False, 0)
+                    a.set_halign(Gtk.Align.CENTER)
+                    a.set_valign(va)
+                    ov.add_overlay(a)
+                    ov.set_overlay_pass_through(a, True)
+                self.zoff_box.pack_start(ov, False, False, 0)
             else:
                 self.zoff_box.pack_start(d, False, False, 0)
             self.zoff_digits.append(d)
