@@ -98,18 +98,18 @@ class Panel(ScreenPanel):
         # digits have no descenders, so the glyphs ride high in their line box
         # and crowd the top arrow; a small shared top margin recenters them
         # optically between the arrows (all labels together, baselines intact)
-        self.zoff_prefix.set_margin_top(8)
+        self.zoff_prefix.set_margin_top(5)
         self.zoff_box.pack_start(self.zoff_prefix, False, False, 0)
         self.zoff_digits = []
         for i in range(3):
             d = Gtk.Label(label="0")
             d.get_style_context().add_class("glance-temp-val")
-            d.set_margin_top(8)
+            d.set_margin_top(5)
             if i == 1:
                 # arrows as overlay children: they draw above/below the digit
                 # but cost zero height, so full-size arrows fit in a fixed box
                 holder = Gtk.Box()
-                holder.set_size_request(-1, 54)
+                holder.set_size_request(-1, 60)
                 d.set_valign(Gtk.Align.CENTER)
                 holder.add(d)
                 ov = Gtk.Overlay()
@@ -183,7 +183,7 @@ class Panel(ScreenPanel):
         actions.pack_start(self.btn_save, True, True, 0)
         actions.pack_start(self.btn_more, True, True, 0)
 
-        side = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        side = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
         side.get_style_context().add_class("glance-side")
         # 45% of the hero+side area (content is ~0.88 of screen width)
         side.set_size_request(int(self._screen.width * 0.40), -1)
