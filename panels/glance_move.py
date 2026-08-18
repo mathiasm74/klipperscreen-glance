@@ -630,6 +630,7 @@ class Panel(ScreenPanel):
         self.zcal_start.set_sensitive(True)
         for b in (self.zcal_down, self.zcal_up, self.zcal_save):
             b.set_sensitive(False)
+        self.zcal_start_offset = None
         self.zcal_backdrop.show()
 
     def zcal_begin(self, widget):
@@ -639,16 +640,50 @@ class Panel(ScreenPanel):
         script += (f"G90\nG0 X{self.bed_x / 2:.1f} Y{self.bed_y / 2:.1f} F9000\n"
                    f"G0 Z0.1 F{Z_SPEED * 60}")
         self._screen._ws.klippy.gcode_script(script)
+        offset = self._printer.get_stat("gcode_move", "homing_origin")
+        self.zcal_start_offset = (float(offset[2])
+                                  if offset and not isinstance(offset, dict) else 0.0)
         widget.set_sensitive(False)
         for b in (self.zcal_down, self.zcal_up, self.zcal_save):
             b.set_sensitive(True)
 
+    def _zcal_state(self):
+        offset = self._printer.get_stat("gcode_move", "homing_origin")
+        o = float(offset[2]) if offset and not isinstance(offset, dict) else 0.0
+        return self.pos[2], o  # commanded Z, current offset
+
     def zcal_adjust(self, widget, sign):
-        self._screen._ws.klippy.gcode_script(
-            f"SET_GCODE_OFFSET Z_ADJUST={0.01 * sign:+.3f} MOVE=1")
+        # the starting 0.10 is deliberate air gap, not offset error: taps are
+        # pure motion above commanded Z0; only once the nozzle is AT the
+        # current believed zero does further descent dig into the offset.
+        # Rising un-digs the offset first, symmetrically.
+        cmd_z, offset = self._zcal_state()
+        if sign < 0:
+            if cmd_z > 0.0005:
+                self._screen._ws.klippy.gcode_script(
+                    f"G91\nG0 Z-0.01 F{Z_SPEED * 60}\nG90")
+            else:
+                self._screen._ws.klippy.gcode_script(
+                    "SET_GCODE_OFFSET Z_ADJUST=-0.010 MOVE=1")
+        else:
+            if (self.zcal_start_offset is not None
+                    and offset < self.zcal_start_offset - 0.0005):
+                self._screen._ws.klippy.gcode_script(
+                    "SET_GCODE_OFFSET Z_ADJUST=+0.010 MOVE=1")
+            else:
+                self._screen._ws.klippy.gcode_script(
+                    f"G91\nG0 Z0.01 F{Z_SPEED * 60}\nG90")
 
     def zcal_do_save(self, widget):
-        self._screen._ws.klippy.gcode_script("Z_OFFSET_APPLY_PROBE")
+        # drag found at commanded Z_c means the true zero is Z_c above the
+        # believed zero: fold any motion-phase remainder into the offset,
+        # then persist
+        cmd_z, _o = self._zcal_state()
+        script = ""
+        if abs(cmd_z) > 0.0005:
+            script += f"SET_GCODE_OFFSET Z_ADJUST={cmd_z:+.3f} MOVE=1\n"
+        script += "Z_OFFSET_APPLY_PROBE"
+        self._screen._ws.klippy.gcode_script(script)
         widget.set_sensitive(False)
 
     def close_zcal(self, widget=None, event=None):
