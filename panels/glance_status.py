@@ -76,6 +76,9 @@ class Panel(ScreenPanel):
         self.fname_lbl = Gtk.Label(label="", xalign=0)
         self.fname_lbl.get_style_context().add_class("glance-fname")
         self.fname_lbl.set_ellipsize(Pango.EllipsizeMode.MIDDLE)
+        # ellipsized labels still request full-text natural width; cap it so
+        # long filenames can't push the column into the hero
+        self.fname_lbl.set_max_width_chars(30)
 
         self.noz_row, self.noz_val = self._temp_row(_("Nozzle"))
         self.bed_row, self.bed_val = self._temp_row(_("Bed"))
@@ -169,7 +172,8 @@ class Panel(ScreenPanel):
 
         side = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         side.get_style_context().add_class("glance-side")
-        side.set_size_request(int(self._screen.width * 0.34), -1)
+        # 45% of the hero+side area (content is ~0.88 of screen width)
+        side.set_size_request(int(self._screen.width * 0.40), -1)
         # children with hexpand (buttons) would propagate expand up and get this
         # column centered in a variable-width cell, wobbling with the hero digits;
         # explicit hexpand=False stops the propagation so pack_end pins it right
