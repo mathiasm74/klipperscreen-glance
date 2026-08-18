@@ -95,11 +95,16 @@ class Panel(ScreenPanel):
         self.zoff_box.set_valign(Gtk.Align.CENTER)
         self.zoff_prefix = Gtk.Label(label="+0.")
         self.zoff_prefix.get_style_context().add_class("glance-temp-val")
+        # digits have no descenders, so the glyphs ride high in their line box
+        # and crowd the top arrow; a small shared top margin recenters them
+        # optically between the arrows (all labels together, baselines intact)
+        self.zoff_prefix.set_margin_top(8)
         self.zoff_box.pack_start(self.zoff_prefix, False, False, 0)
         self.zoff_digits = []
         for i in range(3):
             d = Gtk.Label(label="0")
             d.get_style_context().add_class("glance-temp-val")
+            d.set_margin_top(8)
             if i == 1:
                 # arrows as overlay children: they draw above/below the digit
                 # but cost zero height, so full-size arrows fit in a fixed box
