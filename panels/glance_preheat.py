@@ -25,16 +25,26 @@ class Panel(ScreenPanel):
         title = title or _("Preheat")
         super().__init__(screen, title)
 
+        specs = [("extruder", "extruder", _("Extruder"), 270, False),
+                 ("heater_bed", "heater_bed", _("Bed"), 130, False)]
+        # a chamber heater gets a full slider; a bare sensor an inert row
+        if self._printer.config_section_exists("heater_generic chamber"):
+            specs.append(("heater_generic chamber", "chamber", _("Chamber"),
+                          80, False))
+        elif self._printer.config_section_exists("temperature_sensor chamber"):
+            specs.append(("temperature_sensor chamber", None, _("Chamber"),
+                          80, True))
+
         self.heaters = []
-        for device, name, fallback_max in (("extruder", _("Extruder"), 270),
-                                           ("heater_bed", _("Bed"), 130)):
+        for device, heater, name, fallback_max, readonly in specs:
             cfg = self._printer.get_config_section(device)
             try:
                 max_t = float(cfg["max_temp"])
             except (TypeError, KeyError, ValueError):
                 max_t = fallback_max
             self.heaters.append({
-                "device": device, "name": name, "max": max_t,
+                "device": device, "heater": heater, "name": name,
+                "max": max_t, "readonly": readonly,
                 "live": 0.0, "target": 0.0, "pending": None,
             })
 
@@ -53,17 +63,19 @@ class Panel(ScreenPanel):
             h["live_lbl"].get_style_context().add_class(cls)
             head.pack_start(nm, True, True, 0)
             head.pack_end(h["live_lbl"], False, False, 0)
-            head.pack_end(h["target_lbl"], False, False, 0)
+            if not h["readonly"]:
+                head.pack_end(h["target_lbl"], False, False, 0)
 
             area = Gtk.DrawingArea(hexpand=True)
             area.set_size_request(-1, 64)
-            area.add_events(Gdk.EventMask.BUTTON_PRESS_MASK
-                            | Gdk.EventMask.BUTTON_RELEASE_MASK
-                            | Gdk.EventMask.BUTTON1_MOTION_MASK)
             area.connect("draw", self.on_slider_draw, h)
-            area.connect("button-press-event", self.on_slider_press, h)
-            area.connect("motion-notify-event", self.on_slider_motion, h)
-            area.connect("button-release-event", self.on_slider_release, h)
+            if not h["readonly"]:
+                area.add_events(Gdk.EventMask.BUTTON_PRESS_MASK
+                                | Gdk.EventMask.BUTTON_RELEASE_MASK
+                                | Gdk.EventMask.BUTTON1_MOTION_MASK)
+                area.connect("button-press-event", self.on_slider_press, h)
+                area.connect("motion-notify-event", self.on_slider_motion, h)
+                area.connect("button-release-event", self.on_slider_release, h)
             h["area"] = area
 
             left.pack_start(head, False, False, 0)
@@ -174,9 +186,13 @@ class Panel(ScreenPanel):
         live_x = self._temp_to_x(h, area, h["live"])
         if h["live"] > AMBIENT + 2:
             self._rounded(cr, x, y, max(live_x - x, 20), hh, 10)
-            cr.set_source_rgba(1.0, 0.69, 0.0, 0.32)  # amber fill to live temp
+            # sensor-only rows read as instruments, not controls
+            cr.set_source_rgba(1.0, 0.69, 0.0, 0.14 if h["readonly"] else 0.32)
             cr.fill()
-        cr.set_source_rgb(0.91, 0.918, 0.929)        # live tick
+        if h["readonly"]:
+            cr.set_source_rgb(0.482, 0.49, 0.525)    # gray tick, no handle
+        else:
+            cr.set_source_rgb(0.91, 0.918, 0.929)    # live tick
         cr.rectangle(live_x - 2, y - 4, 4, hh + 8)
         cr.fill()
 
@@ -224,7 +240,9 @@ class Panel(ScreenPanel):
 
         cr.select_font_face("Space Grotesk")
         cr.set_font_size(17)
-        # dashed target lines with right-edge labels
+        # dashed target lines with right-edge labels (nudged apart when the
+        # graph is short enough for two targets to collide)
+        label_ys = []
         for h in self.heaters:
             if h["target"] > 0:
                 yy = ty(h["target"])
@@ -236,7 +254,11 @@ class Panel(ScreenPanel):
                 cr.stroke()
                 cr.set_dash(())
                 cr.set_source_rgb(0.482, 0.49, 0.525)
-                cr.move_to(18 + px_w, yy + 6)
+                ly = yy + 6
+                while any(abs(ly - prev) < 17 for prev in label_ys):
+                    ly += 17
+                label_ys.append(ly)
+                cr.move_to(18 + px_w, ly)
                 cr.show_text(f"{h['target']:.0f}")
         cr.set_source_rgb(0.482, 0.49, 0.525)
         cr.move_to(16, 24)
@@ -276,7 +298,7 @@ class Panel(ScreenPanel):
         h["pending"] = None
         if t < OFF_BELOW:
             t = 0.0
-        self._set_target(h["device"], t)
+        self._set_target(h["heater"], t)
         return True
 
     # ---- actions ------------------------------------------------------------
