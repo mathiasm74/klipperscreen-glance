@@ -1,0 +1,177 @@
+<!-- @dsCard group="Screens" -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Glance — Job Status</title>
+<style>
+{{FONTS}}
+{{TOKENS}}
+{{SHARED}}
+</style>
+</head>
+<body>
+
+<!-- ============ HEATING ============ -->
+<div class="variant">
+  <div class="caption">Job status — heating (amber phase)</div>
+  <div class="stage">
+    <div class="titlebar"><span>Voron Job Status</span><span>150° / 150° &nbsp;·&nbsp; 78° / 110° &nbsp;&nbsp; 20:41</span></div>
+    <div class="trow">
+      <div class="action-bar">
+        <div class="ab-btn">‹</div>
+        <div class="ab-btn">⌂</div>
+        <div class="ab-spacer"></div>
+        <div class="ab-estop">STOP</div>
+      </div>
+      <div class="panel">
+        <div class="frame ph-heat">
+          <div class="hero">
+            <div class="phase">HEATING</div>
+            <div class="big ph-heat">42</div>
+            <div class="subline">Bed 78 / 110°</div>
+          </div>
+          <div class="side">
+            <div class="thumb part"><svg width="170" height="170" viewBox="0 0 100 100"><g stroke="#3f4756" stroke-width="1.2" stroke-linejoin="round"><polygon points="50,12 88,32 50,52 12,32" fill="#2b3342"/><polygon points="12,32 50,52 50,90 12,70" fill="#1d232e"/><polygon points="88,32 50,52 50,90 88,70" fill="#242b38"/></g></svg></div>
+            <div class="fname">voron_logo_plate</div>
+            <div class="temp-row"><span class="temp-name">Nozzle</span><span class="temp-val">150 / 150°</span></div>
+            <div class="temp-row ph-heat"><span class="temp-name">Bed</span><span class="temp-val">78 / 110°</span></div>
+            <div class="actions">
+              <div class="action-btn dim">⏸</div>
+              <div class="action-btn">⏹</div>
+              <div class="action-btn">• • •</div>
+            </div>
+          </div>
+        </div>
+        <div class="rail ph-heat"><div class="fill" style="width:42%"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PRINTING ============ -->
+<div class="variant">
+  <div class="caption">Job status — printing (green phase, speed + z-offset controls)</div>
+  <div class="stage">
+    <div class="titlebar"><span>Voron Job Status</span><span>245° / 245° &nbsp;·&nbsp; 110° / 110° &nbsp;&nbsp; 21:14</span></div>
+    <div class="trow">
+      <div class="action-bar">
+        <div class="ab-btn">‹</div>
+        <div class="ab-btn">⌂</div>
+        <div class="ab-spacer"></div>
+        <div class="ab-estop">STOP</div>
+      </div>
+      <div class="panel">
+        <div class="frame ph-print">
+          <div class="hero">
+            <div class="phase">PRINTING</div>
+            <div class="big ph-print">67</div>
+            <div class="subline">1h 24m left &nbsp;·&nbsp; done 22:38</div>
+          </div>
+          <div class="side">
+            <div class="thumb part"><svg width="170" height="170" viewBox="0 0 100 100"><g stroke="#3f4756" stroke-width="1.2" stroke-linejoin="round"><polygon points="50,12 88,32 50,52 12,32" fill="#2b3342"/><polygon points="12,32 50,52 50,90 12,70" fill="#1d232e"/><polygon points="88,32 50,52 50,90 88,70" fill="#242b38"/></g></svg></div>
+            <div class="fname">voron_logo_plate</div>
+            <div class="factor-row">
+              <span class="temp-name">Speed</span>
+              <span class="temp-val">100%</span>
+              <div class="step-btn">−</div>
+              <div class="step-btn">+</div>
+            </div>
+            <div class="factor-row">
+              <span class="temp-name">Z-offset</span>
+              <span class="zoff-value">+0.2<span class="zoff-digit"><span class="arr">▲</span><span class="d">4</span><span class="arr">▼</span></span>0</span>
+              <div class="step-btn">↓</div>
+              <div class="step-btn">↑</div>
+            </div>
+            <div class="actions">
+              <div class="action-btn">⏸</div>
+              <div class="action-btn">⏹</div>
+              <div class="action-btn">• • •</div>
+            </div>
+          </div>
+        </div>
+        <div class="rail ph-print"><div class="fill" style="width:67%"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PAUSED ============ -->
+<div class="variant">
+  <div class="caption">Job status — paused (filament controls swap in)</div>
+  <div class="stage">
+    <div class="titlebar"><span>Voron Job Status</span><span>245° / 245° &nbsp;·&nbsp; 110° / 110° &nbsp;&nbsp; 21:31</span></div>
+    <div class="trow">
+      <div class="action-bar">
+        <div class="ab-btn">‹</div>
+        <div class="ab-btn">⌂</div>
+        <div class="ab-spacer"></div>
+        <div class="ab-estop">STOP</div>
+      </div>
+      <div class="panel">
+        <div class="frame ph-heat">
+          <div class="hero">
+            <div class="phase">PAUSED</div>
+            <div class="big word ph-heat">PAUSED</div>
+            <div class="subline">elapsed 43m</div>
+          </div>
+          <div class="side">
+            <div class="thumb part"><svg width="150" height="150" viewBox="0 0 100 100"><g stroke="#3f4756" stroke-width="1.2" stroke-linejoin="round"><polygon points="50,12 88,32 50,52 12,32" fill="#2b3342"/><polygon points="12,32 50,52 50,90 12,70" fill="#1d232e"/><polygon points="88,32 50,52 50,90 88,70" fill="#242b38"/></g></svg></div>
+            <div class="fname">voron_logo_plate</div>
+            <div class="btn-pair">
+              <div class="row-btn">Unload</div>
+              <div class="row-btn">Load</div>
+            </div>
+            <div class="row-btn">Filament / extrude panel</div>
+            <div class="actions">
+              <div class="action-btn">▶</div>
+              <div class="action-btn">⏹</div>
+              <div class="action-btn">• • •</div>
+            </div>
+          </div>
+        </div>
+        <div class="rail ph-heat"><div class="fill" style="width:67%"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ DONE ============ -->
+<div class="variant">
+  <div class="caption">Job status — complete (violet phase)</div>
+  <div class="stage">
+    <div class="titlebar"><span>Voron Job Status</span><span>142° &nbsp;·&nbsp; 46° &nbsp;&nbsp; 23:21</span></div>
+    <div class="trow">
+      <div class="action-bar">
+        <div class="ab-btn">‹</div>
+        <div class="ab-btn">⌂</div>
+        <div class="ab-spacer"></div>
+        <div class="ab-estop">STOP</div>
+      </div>
+      <div class="panel">
+        <div class="frame ph-done">
+          <div class="hero">
+            <div class="phase">COMPLETE</div>
+            <div class="big word ph-done">DONE</div>
+            <div class="subline">finished in 2h 07m</div>
+          </div>
+          <div class="side">
+            <div class="thumb part"><svg width="150" height="150" viewBox="0 0 100 100"><g stroke="#3f4756" stroke-width="1.2" stroke-linejoin="round"><polygon points="50,12 88,32 50,52 12,32" fill="#2b3342"/><polygon points="12,32 50,52 50,90 12,70" fill="#1d232e"/><polygon points="88,32 50,52 50,90 88,70" fill="#242b38"/></g></svg></div>
+            <div class="fname">voron_logo_plate</div>
+            <div class="temp-row"><span class="temp-name">Nozzle</span><span class="temp-val">142°</span></div>
+            <div class="temp-row"><span class="temp-name">Bed</span><span class="temp-val">46°</span></div>
+            <div class="actions">
+              <div class="action-btn">✓</div>
+              <div class="action-btn">Save Z</div>
+              <div class="action-btn">• • •</div>
+            </div>
+          </div>
+        </div>
+        <div class="rail ph-done"><div class="fill" style="width:100%"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

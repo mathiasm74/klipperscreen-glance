@@ -1,0 +1,65 @@
+/* Glance — design tokens for the KlipperScreen "Glance" theme.
+   Source of truth: styles/glance/style.css in the klipperscreen-glance repo
+   (GTK3 CSS running on the printer). These are the same values expressed as
+   web-standard custom properties. */
+
+@font-face {
+    font-family: "Anton";
+    src: url("fonts/Anton-Regular.ttf") format("truetype");
+    font-weight: 400;
+}
+@font-face {
+    font-family: "Space Grotesk";
+    src: url("fonts/SpaceGrotesk.ttf") format("truetype");
+    font-weight: 300 700;
+}
+
+:root {
+    /* surfaces */
+    --bg: #0b0d10;            /* window background */
+    --surface: #16181d;       /* buttons */
+    --surface-raised: #23252b;/* active / dividers */
+    --card: #14171d;          /* recent-file cards */
+    --card-border: #262c36;
+    --thumb: #111318;         /* thumbnail well */
+    --sheet: #12151b;         /* modal card */
+    --sheet-border: #2a2e36;
+    --sheet-btn: #242b39;
+    --sheet-btn-border: #3b4456;
+    --backdrop: rgba(4, 6, 9, 0.72);
+
+    /* text */
+    --text: #e8eaed;
+    --text-soft: #d7d9de;     /* sublines */
+    --dim: #7b7d86;           /* labels, filenames, phase word */
+    --arrow-dim: #8a8d97;     /* z-offset digit arrows */
+
+    /* phase colors — the whole UI keys off the machine phase */
+    --ph-heat: #ffb000;       /* amber: heating / soaking */
+    --ph-prep: #33c5e8;       /* cyan: homing, QGL, meshing, moving */
+    --ph-print: #3fd968;      /* green: printing */
+    --ph-done: #a98bf5;       /* violet: finished */
+    --ph-err: #e5484d;        /* red: error / cancelled */
+
+    /* selection — solid cyan fill with dark text, everywhere */
+    --selected-bg: #33c5e8;
+    --selected-fg: #0b0d10;
+
+    /* structure */
+    --frame-border: 5px;      /* phase-colored frame: top/left/right */
+    --rail-height: 32px;      /* bottom progress rail = the frame's 4th edge */
+    --radius-btn: 10px;
+    --radius-card: 14px;
+    --radius-sheet: 18px;
+
+    /* type scale (1024x600 touchscreen at arm's length) */
+    --font-ui: "Space Grotesk", sans-serif;
+    --font-display: "Anton", sans-serif;
+    --fs-hero: 160px;         /* Anton — the one number that matters */
+    --fs-hero-word: 88px;     /* Anton — READY / PAUSED / DONE */
+    --fs-z-display: 58px;     /* Anton — live Z readout */
+    --fs-phase: 26px;         /* phase word, sublines */
+    --fs-label: 24px;         /* row labels */
+    --fs-value: 30px;         /* row values */
+    --fs-fname: 20px;         /* filenames */
+}

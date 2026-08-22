@@ -1,0 +1,147 @@
+<!-- @dsCard group="Screens" -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Glance — Home</title>
+<style>
+{{FONTS}}
+{{TOKENS}}
+{{SHARED}}
+/* home-specific */
+.stage { position: relative; }
+.side-head { font-size: 20px; color: var(--dim); flex: none; }
+.file-card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 8px 12px;
+    display: flex;
+    flex-direction: column;
+    flex: none;
+}
+.file-card.hero-card { flex: 1; min-height: 0; }
+.file-card .well { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
+.file-card .nm { font-size: 20px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.file-card .tm { font-size: 18px; color: #62656e; }
+.file-row { flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; }
+.file-row .nm { flex: 1; }
+.backdrop {
+    position: absolute; inset: 0;
+    background: var(--backdrop);
+    display: flex; align-items: center; justify-content: center;
+}
+.sheet {
+    width: 460px;
+    background: var(--sheet);
+    border: 2px solid var(--sheet-border);
+    border-radius: 18px;
+    padding: 24px 28px;
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+}
+.sheet .s-name { font-size: 30px; color: var(--text); }
+.sheet .s-time { font-size: 24px; color: var(--dim); }
+.sheet .row { display: flex; gap: 12px; width: 100%; margin-top: 10px; }
+.sheet .row .row-btn { flex: 1; background: var(--sheet-btn); border: 1px solid var(--sheet-btn-border); }
+.sheet .start { color: var(--ph-print); font-weight: 700; font-size: 28px; }
+</style>
+</head>
+<body>
+
+<!-- ============ READY ============ -->
+<div class="variant">
+  <div class="caption">Home — idle (recent prints ready to relaunch)</div>
+  <div class="stage">
+    <div class="titlebar"><span>Voron Main Menu</span><span>24° &nbsp;·&nbsp; 23° &nbsp;&nbsp; 09:12</span></div>
+    <div class="trow">
+      <div class="action-bar">
+        <div class="ab-btn">☰</div>
+        <div class="ab-btn">⌂</div>
+        <div class="ab-spacer"></div>
+        <div class="ab-estop">STOP</div>
+      </div>
+      <div class="panel">
+        <div class="frame">
+          <div class="hero">
+            <div class="big word">READY</div>
+            <div class="subline">heaters off &nbsp;·&nbsp; homed</div>
+            <div class="temps-line">Nozzle 24° &nbsp;·&nbsp; Bed 23°</div>
+          </div>
+          <div class="side">
+            <div class="side-head">Print again</div>
+            <div class="file-card hero-card">
+              <div class="well"><svg width="120" height="120" viewBox="0 0 100 100"><g stroke="#3f4756" stroke-width="1.2" stroke-linejoin="round"><polygon points="50,12 88,32 50,52 12,32" fill="#2b3342"/><polygon points="12,32 50,52 50,90 12,70" fill="#1d232e"/><polygon points="88,32 50,52 50,90 88,70" fill="#242b38"/></g></svg></div>
+              <div class="nm">voron_logo_plate</div>
+              <div class="tm">2h 10m</div>
+            </div>
+            <div class="file-card file-row"><span class="nm">skirt_clips_x4</span><span class="tm">44m</span></div>
+            <div class="file-card file-row"><span class="nm">eddy_probe_mount</span><span class="tm">1h 18m</span></div>
+            <div class="btn-pair">
+              <div class="row-btn">Preheat</div>
+              <div class="row-btn">Move</div>
+              <div class="row-btn">Filament</div>
+              <div class="row-btn">• • •</div>
+            </div>
+          </div>
+        </div>
+        <div class="rail"><div class="fill" style="width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ START CONFIRM ============ -->
+<div class="variant">
+  <div class="caption">Home — start-print confirmation sheet</div>
+  <div class="stage">
+    <div class="titlebar"><span>Voron Main Menu</span><span>24° &nbsp;·&nbsp; 23° &nbsp;&nbsp; 09:12</span></div>
+    <div class="trow">
+      <div class="action-bar">
+        <div class="ab-btn">☰</div>
+        <div class="ab-btn">⌂</div>
+        <div class="ab-spacer"></div>
+        <div class="ab-estop">STOP</div>
+      </div>
+      <div class="panel">
+        <div class="frame">
+          <div class="hero">
+            <div class="big word">READY</div>
+            <div class="subline">heaters off &nbsp;·&nbsp; homed</div>
+            <div class="temps-line">Nozzle 24° &nbsp;·&nbsp; Bed 23°</div>
+          </div>
+          <div class="side">
+            <div class="side-head">Print again</div>
+            <div class="file-card hero-card">
+              <div class="well"><svg width="120" height="120" viewBox="0 0 100 100"><g stroke="#3f4756" stroke-width="1.2" stroke-linejoin="round"><polygon points="50,12 88,32 50,52 12,32" fill="#2b3342"/><polygon points="12,32 50,52 50,90 12,70" fill="#1d232e"/><polygon points="88,32 50,52 50,90 88,70" fill="#242b38"/></g></svg></div>
+              <div class="nm">voron_logo_plate</div>
+              <div class="tm">2h 10m</div>
+            </div>
+            <div class="file-card file-row"><span class="nm">skirt_clips_x4</span><span class="tm">44m</span></div>
+            <div class="file-card file-row"><span class="nm">eddy_probe_mount</span><span class="tm">1h 18m</span></div>
+            <div class="btn-pair">
+              <div class="row-btn">Preheat</div>
+              <div class="row-btn">Move</div>
+              <div class="row-btn">Filament</div>
+              <div class="row-btn">• • •</div>
+            </div>
+          </div>
+        </div>
+        <div class="rail"><div class="fill" style="width:0%"></div></div>
+      </div>
+    </div>
+    <div class="backdrop">
+      <div class="sheet">
+        <svg width="160" height="160" viewBox="0 0 100 100"><g stroke="#3f4756" stroke-width="1.2" stroke-linejoin="round"><polygon points="50,12 88,32 50,52 12,32" fill="#2b3342"/><polygon points="12,32 50,52 50,90 12,70" fill="#1d232e"/><polygon points="88,32 50,52 50,90 88,70" fill="#242b38"/></g></svg>
+        <div class="s-name">voron_logo_plate</div>
+        <div class="s-time">2h 10m</div>
+        <div class="row">
+          <div class="row-btn">Cancel</div>
+          <div class="row-btn"><span class="start">Start</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

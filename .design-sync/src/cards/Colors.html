@@ -1,0 +1,50 @@
+<!-- @dsCard group="Foundations" -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Glance — Colors</title>
+<style>
+{{FONTS}}
+{{TOKENS}}
+{{SHARED}}
+body { background: var(--bg); padding: 36px 44px; gap: 26px; }
+h2 { color: var(--dim); font-size: 17px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; }
+.grid { display: flex; gap: 16px; flex-wrap: wrap; }
+.sw { width: 168px; display: flex; flex-direction: column; gap: 8px; }
+.sw .chip { height: 76px; border-radius: 12px; border: 1px solid #262c36; }
+.sw .nm { color: var(--text); font-size: 18px; font-weight: 500; }
+.sw .hex { color: var(--dim); font-size: 15px; }
+.sw .use { color: #62656e; font-size: 14px; line-height: 1.35; }
+</style>
+</head>
+<body>
+
+<h2>Phase colors — the frame, hero and rail all key off the machine phase</h2>
+<div class="grid">
+  <div class="sw"><div class="chip" style="background:var(--ph-heat)"></div><div class="nm">Heat</div><div class="hex">#ffb000</div><div class="use">Heating, soaking, cooling, paused</div></div>
+  <div class="sw"><div class="chip" style="background:var(--ph-prep)"></div><div class="nm">Prep</div><div class="hex">#33c5e8</div><div class="use">Homing, QGL, meshing, moves — and every selected control</div></div>
+  <div class="sw"><div class="chip" style="background:var(--ph-print)"></div><div class="nm">Print</div><div class="hex">#3fd968</div><div class="use">Printing; the Start verb</div></div>
+  <div class="sw"><div class="chip" style="background:var(--ph-done)"></div><div class="nm">Done</div><div class="hex">#a98bf5</div><div class="use">Job finished</div></div>
+  <div class="sw"><div class="chip" style="background:var(--ph-err)"></div><div class="nm">Error</div><div class="hex">#e5484d</div><div class="use">Error, cancelled, emergency stop</div></div>
+</div>
+
+<h2>Surfaces</h2>
+<div class="grid">
+  <div class="sw"><div class="chip" style="background:var(--bg)"></div><div class="nm">Background</div><div class="hex">#0b0d10</div><div class="use">Window</div></div>
+  <div class="sw"><div class="chip" style="background:var(--surface)"></div><div class="nm">Surface</div><div class="hex">#16181d</div><div class="use">Buttons</div></div>
+  <div class="sw"><div class="chip" style="background:var(--card)"></div><div class="nm">Card</div><div class="hex">#14171d</div><div class="use">Recent-file cards, bordered #262c36</div></div>
+  <div class="sw"><div class="chip" style="background:var(--thumb)"></div><div class="nm">Well</div><div class="hex">#111318</div><div class="use">Thumbnails, maps</div></div>
+  <div class="sw"><div class="chip" style="background:var(--sheet)"></div><div class="nm">Sheet</div><div class="hex">#12151b</div><div class="use">Modal card over rgba(4,6,9,.72) backdrop; border takes phase color</div></div>
+</div>
+
+<h2>Text &amp; selection</h2>
+<div class="grid">
+  <div class="sw"><div class="chip" style="background:var(--text)"></div><div class="nm">Text</div><div class="hex">#e8eaed</div><div class="use">Values, verbs</div></div>
+  <div class="sw"><div class="chip" style="background:var(--text-soft)"></div><div class="nm">Soft</div><div class="hex">#d7d9de</div><div class="use">Sublines</div></div>
+  <div class="sw"><div class="chip" style="background:var(--dim)"></div><div class="nm">Dim</div><div class="hex">#7b7d86</div><div class="use">Labels, phase word, filenames, units</div></div>
+  <div class="sw"><div class="chip" style="background:var(--selected-bg); display:flex; align-items:center; justify-content:center; color:#0b0d10; font-weight:700; font-size:26px;">1.0</div><div class="nm">Selected</div><div class="hex">#33c5e8 on #0b0d10</div><div class="use">Toggled controls: solid cyan fill, dark bold text, one size up</div></div>
+</div>
+
+</body>
+</html>

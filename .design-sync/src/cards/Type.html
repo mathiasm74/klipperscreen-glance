@@ -1,0 +1,33 @@
+<!-- @dsCard group="Foundations" -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Glance — Type</title>
+<style>
+{{FONTS}}
+{{TOKENS}}
+{{SHARED}}
+body { background: var(--bg); padding: 36px 44px; gap: 30px; }
+h2 { color: var(--dim); font-size: 17px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; }
+.spec { display: flex; align-items: baseline; gap: 26px; }
+.spec .sample { color: var(--text); line-height: 1; }
+.spec .meta { color: #62656e; font-size: 15px; line-height: 1.5; min-width: 260px; }
+.anton { font-family: var(--font-display); }
+</style>
+</head>
+<body>
+
+<h2>Anton — display. One number (or word) per screen gets it; nothing else does</h2>
+<div class="spec"><div class="sample anton" style="font-size:160px; color:var(--ph-print)">67</div><div class="meta">160px · hero percent<br>readable across the room; takes the phase color</div></div>
+<div class="spec"><div class="sample anton" style="font-size:88px; color:var(--ph-done)">DONE</div><div class="meta">88px · hero word — READY / PAUSED / DONE / ERROR</div></div>
+<div class="spec"><div class="sample anton" style="font-size:58px">12.40</div><div class="meta">58px · live Z readout on the Move screen</div></div>
+
+<h2>Space Grotesk — everything else</h2>
+<div class="spec"><div class="sample" style="font-size:30px">245 / 245°</div><div class="meta">30px · row values</div></div>
+<div class="spec"><div class="sample" style="font-size:26px; color:var(--text-soft)">1h 24m left &nbsp;·&nbsp; done 22:38</div><div class="meta">26px · phase word, sublines, verbs</div></div>
+<div class="spec"><div class="sample" style="font-size:24px; color:var(--dim)">Nozzle &nbsp;&nbsp; Bed &nbsp;&nbsp; Speed &nbsp;&nbsp; Z-offset</div><div class="meta">24px · row labels, dim</div></div>
+<div class="spec"><div class="sample" style="font-size:20px; color:var(--dim)">voron_logo_plate</div><div class="meta">20px · filenames, card names</div></div>
+
+</body>
+</html>
