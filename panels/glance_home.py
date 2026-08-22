@@ -288,7 +288,7 @@ class Panel(ScreenPanel):
     # ---- doors ---------------------------------------------------------------
 
     def open_preheat(self, widget):
-        self._screen.show_panel("temperature")
+        self._screen.show_panel("glance_preheat")
 
     def open_move(self, widget):
         self._screen.show_panel("glance_move")

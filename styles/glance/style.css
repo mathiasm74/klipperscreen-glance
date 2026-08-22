@@ -321,3 +321,31 @@ button.active label {
 .glance-zoff-row .glance-z-arrow {
     font-size: 13px;
 }
+
+/* ---- glance preheat panel ---- */
+
+/* only the extruder's live temp gets the display face */
+.glance-preheat-live {
+    font-family: "Anton";
+    font-size: 58px;
+    color: @text;
+}
+.glance-preheat-live.ph-heat { color: @ph-heat; }
+.glance-preheat-bedlive { font-size: 30px; color: @text; }
+.glance-preheat-bedlive.ph-heat { color: @ph-heat; }
+.glance-target { font-size: 22px; color: @ph-prep; }
+.glance-target-off { font-size: 22px; color: #5a5d66; }
+
+/* material profile buttons; the active one takes the selection fill.
+   base.css button padding would stack onto min-height and push the rail
+   off-screen - four profiles + verbs must fit the 519px content column */
+.glance-profile { min-height: 52px; padding: 2px 14px; }
+.glance-profile label { font-size: 26px; color: @text; }
+.glance-profile .glance-profile-temps { font-size: 20px; color: @glance-dim; }
+.glance-profile-on { background-color: #33c5e8; }
+.glance-profile-on label { color: #0b0d10; font-size: 30px; font-weight: bold; }
+.glance-profile-on .glance-profile-temps { color: #0b0d10; font-size: 22px; }
+
+.glance-cool { min-height: 42px; padding: 2px 8px; font-size: 24px; }
+.glance-hold { min-height: 52px; padding: 2px 8px; }
+.glance-hold label { color: @ph-print; font-size: 26px; font-weight: bold; }
