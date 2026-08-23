@@ -71,13 +71,12 @@ class Panel(ScreenPanel):
         big_box.pack_start(time0, False, False, 0)
         big_card.add(big_box)
         big_card.get_style_context().add_class("glance-card")
-        big_card.set_vexpand(True)
         big_card.connect("clicked", self.card_clicked, 0)
-        side.pack_start(big_card, True, True, 0)
         self.cards.append({"btn": big_card, "img": img, "name": name0, "time": time0})
 
-        # older files: compact rows in a touch-scrollable list
+        # the whole history scrolls as one list: big card, then compact rows
         rows_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        rows_box.pack_start(big_card, False, False, 0)
         for i in range(1, 10):
             row = Gtk.Button()
             rbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
@@ -100,9 +99,9 @@ class Panel(ScreenPanel):
         scroller.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         # overlay the scrollbar so rows keep the column's full width
         scroller.set_overlay_scrolling(True)
-        scroller.set_size_request(-1, 132)
+        scroller.set_vexpand(True)
         scroller.add(rows_box)
-        side.pack_start(scroller, False, False, 0)
+        side.pack_start(scroller, True, True, 0)
 
         # verb cards live under the hero (per the original design mock):
         # icon over an uppercase label
