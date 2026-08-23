@@ -1,0 +1,128 @@
+<!-- @dsCard group="Screens" -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Glance — Extrude</title>
+<style>
+{{FONTS}}
+{{TOKENS}}
+{{SHARED}}
+/* extrude-specific */
+.ex-hero { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; padding: 8px 10px 6px 30px; }
+.ex-hero .big { flex: 1; }
+.ph-head { display: flex; align-items: baseline; justify-content: space-between; }
+.ph-head .nm { font-size: 24px; color: var(--dim); }
+.ph-head .tgt { font-size: 22px; color: var(--ph-prep); }
+.ph-slider { position: relative; height: 34px; border-radius: 10px; background: #16181d; flex: none; margin-top: 6px; }
+.ph-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 10px; background: rgba(255,176,0,0.32); }
+.ph-tick { position: absolute; top: -4px; bottom: -4px; width: 4px; margin-left: -2px; background: #e8eaed; }
+.ph-handle { position: absolute; top: -8px; bottom: -8px; width: 7px; margin-left: -3.5px; border-radius: 3.5px; background: #33c5e8; }
+.ph-scale { position: relative; height: 20px; flex: none; font-size: 18px; color: #5a5d66; }
+.ph-scale span { position: absolute; transform: translateX(-50%); }
+.ph-scale span:first-child { transform: none; }
+.ph-scale span:last-child { transform: translateX(-100%); }
+.ex-side { width: 45%; flex: none; display: flex; flex-direction: column; gap: 6px; padding: 10px 16px 8px 6px; }
+.ex-verbs { display: flex; gap: 8px; margin-top: 32px; }
+.ex-verb { flex: 1; min-height: 104px; background: var(--surface); border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.ex-verb .nm { font-size: 34px; color: var(--text); }
+.ex-verb .sub { font-size: 22px; color: var(--dim); }
+.ex-verb.go .nm { color: var(--ph-print); font-weight: 700; }
+.ex-verb.dim .nm, .ex-verb.dim.go .nm { color: #5a5d66; font-weight: normal; }
+.ex-label { font-size: 24px; color: var(--dim); margin-top: 4px; }
+.chips { display: flex; }
+.chip { flex: 1; height: 46px; background: var(--surface); border: 1px solid #3b4149; border-radius: 10px; margin-right: -1px; display: flex; align-items: center; justify-content: center; font-size: 24px; color: var(--text); }
+.chip.on { background: var(--selected-bg); color: var(--selected-fg); font-size: 28px; font-weight: 700; border-color: var(--selected-bg); }
+.ex-lu { display: flex; gap: 8px; }
+.ex-lu .b { flex: 1; min-height: 48px; background: var(--surface); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; color: var(--text); }
+.ex-lu .b.dim { color: #5a5d66; }
+.rail { position: relative; }
+.rail .badge { position: absolute; left: 12px; top: 0; bottom: 0; display: flex; align-items: center; font-size: 22px; font-weight: 700; color: #0b0d10; }
+</style>
+</head>
+<body>
+
+<!-- ============ ARMED, STROKES QUEUED ============ -->
+<div class="variant">
+  <div class="caption">Extrude — armed; two queued strokes counting down on the rail</div>
+  <div class="stage">
+    <div class="titlebar"><span>Voron Extrude</span><span>225° &nbsp;·&nbsp; 59° &nbsp;&nbsp; 22:12</span></div>
+    <div class="trow">
+      <div class="action-bar">
+        <div class="ab-btn">‹</div>
+        <div class="ab-btn">⌂</div>
+        <div class="ab-spacer"></div>
+        <div class="ab-estop">STOP</div>
+      </div>
+      <div class="panel">
+        <div class="frame ph-prep">
+          <div class="ex-hero">
+            <div class="phase">EXTRUDER</div>
+            <div class="big ph-prep">225°</div>
+            <div class="subline">ready to move filament &nbsp;·&nbsp; bed 59°</div>
+            <div class="ph-head"><span class="nm">Nozzle</span><span class="tgt">target 225°</span></div>
+            <div class="ph-slider"><div class="ph-fill" style="width:73.5%"></div><div class="ph-tick" style="left:73.5%"></div><div class="ph-handle" style="left:73.5%"></div></div>
+            <div class="ph-scale"><span style="left:0">100</span><span style="left:29.4%">150</span><span style="left:58.8%">200</span><span style="left:100%">270</span></div>
+          </div>
+          <div class="ex-side">
+            <div class="ex-verbs">
+              <div class="ex-verb"><span class="nm">Retract</span><span class="sub">10 mm</span></div>
+              <div class="ex-verb go"><span class="nm">Extrude</span><span class="sub">10 mm</span></div>
+            </div>
+            <div class="ex-label">Distance mm</div>
+            <div class="chips"><div class="chip">5</div><div class="chip on">10</div><div class="chip">15</div><div class="chip">25</div></div>
+            <div class="ex-label">Speed mm/s</div>
+            <div class="chips"><div class="chip">1</div><div class="chip">2</div><div class="chip on">5</div><div class="chip">10</div></div>
+            <div style="flex:1"></div>
+            <div class="ex-lu"><div class="b">Unload</div><div class="b">Load</div></div>
+          </div>
+        </div>
+        <div class="rail ph-prep"><div class="fill" style="width:58%"></div><div class="badge">2×</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ COLD-GATED ============ -->
+<div class="variant">
+  <div class="caption">Extrude — below min_extrude_temp: verbs disarm, subline says why</div>
+  <div class="stage">
+    <div class="titlebar"><span>Voron Extrude</span><span>150° &nbsp;·&nbsp; 46° &nbsp;&nbsp; 22:31</span></div>
+    <div class="trow">
+      <div class="action-bar">
+        <div class="ab-btn">‹</div>
+        <div class="ab-btn">⌂</div>
+        <div class="ab-spacer"></div>
+        <div class="ab-estop">STOP</div>
+      </div>
+      <div class="panel">
+        <div class="frame ph-prep">
+          <div class="ex-hero">
+            <div class="phase">EXTRUDER</div>
+            <div class="big ph-prep">150°</div>
+            <div class="subline">nozzle cold — heat to move filament</div>
+            <div class="ph-head"><span class="nm">Nozzle</span><span class="tgt">target 150°</span></div>
+            <div class="ph-slider"><div class="ph-fill" style="width:29.4%"></div><div class="ph-tick" style="left:29.4%"></div><div class="ph-handle" style="left:29.4%"></div></div>
+            <div class="ph-scale"><span style="left:0">100</span><span style="left:29.4%">150</span><span style="left:58.8%">200</span><span style="left:100%">270</span></div>
+          </div>
+          <div class="ex-side">
+            <div class="ex-verbs">
+              <div class="ex-verb dim"><span class="nm">Retract</span><span class="sub">10 mm</span></div>
+              <div class="ex-verb go dim"><span class="nm">Extrude</span><span class="sub">10 mm</span></div>
+            </div>
+            <div class="ex-label">Distance mm</div>
+            <div class="chips"><div class="chip">5</div><div class="chip on">10</div><div class="chip">15</div><div class="chip">25</div></div>
+            <div class="ex-label">Speed mm/s</div>
+            <div class="chips"><div class="chip">1</div><div class="chip">2</div><div class="chip on">5</div><div class="chip">10</div></div>
+            <div style="flex:1"></div>
+            <div class="ex-lu"><div class="b dim">Unload</div><div class="b dim">Load</div></div>
+          </div>
+        </div>
+        <div class="rail ph-prep"><div class="fill" style="width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

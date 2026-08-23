@@ -21,6 +21,8 @@ CARDS = {
     "JobStatus.html": "components/Screens/JobStatus/JobStatus.html",
     "Home.html": "components/Screens/Home/Home.html",
     "Move.html": "components/Screens/Move/Move.html",
+    "Preheat.html": "components/Screens/Preheat/Preheat.html",
+    "Extrude.html": "components/Screens/Extrude/Extrude.html",
 }
 
 

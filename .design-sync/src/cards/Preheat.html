@@ -1,0 +1,162 @@
+<!-- @dsCard group="Screens" -->
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Glance — Preheat</title>
+<style>
+{{FONTS}}
+{{TOKENS}}
+{{SHARED}}
+/* preheat-specific */
+.ph-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; padding: 10px 14px 6px 22px; }
+.ph-head { display: flex; align-items: baseline; justify-content: space-between; }
+.ph-head .nm { font-size: 24px; color: var(--dim); }
+.ph-head .right { display: flex; align-items: baseline; gap: 14px; }
+.ph-head .tgt { font-size: 22px; color: var(--ph-prep); }
+.ph-head .tgt.off { color: #5a5d66; }
+.ph-head .live { font-size: 30px; color: var(--text); }
+.ph-head .live.hero { font-family: var(--font-display); font-size: 58px; line-height: 1; }
+.ph-head .live.hot { color: var(--ph-heat); }
+.ph-slider { position: relative; height: 34px; border-radius: 10px; background: #16181d; flex: none; }
+.ph-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 10px; background: rgba(255,176,0,0.32); }
+.ph-fill.faint { background: rgba(255,176,0,0.14); }
+.ph-tick { position: absolute; top: -4px; bottom: -4px; width: 4px; margin-left: -2px; background: #e8eaed; }
+.ph-tick.gray { background: #7b7d86; }
+.ph-handle { position: absolute; top: -8px; bottom: -8px; width: 7px; margin-left: -3.5px; border-radius: 3.5px; background: #33c5e8; }
+.ph-scale { position: relative; height: 20px; flex: none; font-size: 18px; color: #5a5d66; }
+.ph-scale span { position: absolute; transform: translateX(-50%); }
+.ph-scale span:first-child { transform: none; }
+.ph-scale span:last-child { transform: translateX(-100%); }
+.ph-strip { position: relative; height: 10px; border-radius: 5px; background: #16181d; flex: none; margin: 3px 0; }
+.ph-strip .ph-tick { top: -3px; bottom: -3px; }
+.ph-side { width: 296px; flex: none; display: flex; flex-direction: column; gap: 8px; padding: 10px 16px 8px 6px; }
+.ph-side .head { font-size: 24px; color: var(--dim); }
+.profile { min-height: 56px; background: var(--surface); border-radius: 10px; display: flex; align-items: center; justify-content: space-between; padding: 2px 14px; }
+.profile .nm { font-size: 26px; color: var(--text); }
+.profile .tv { font-size: 20px; color: var(--dim); }
+.profile.on { background: var(--selected-bg); }
+.profile.on .nm { color: var(--selected-fg); font-size: 30px; font-weight: 700; }
+.profile.on .tv { color: var(--selected-fg); font-size: 22px; font-weight: 700; }
+.ph-cool { min-height: 46px; background: var(--surface); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; color: var(--text); }
+.ph-hold { min-height: 56px; background: var(--surface); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 700; color: var(--ph-print); }
+.graph { flex: 1; min-height: 0; }
+</style>
+</head>
+<body>
+
+<!-- ============ HEATING TO A PROFILE ============ -->
+<div class="variant">
+  <div class="caption">Preheat — heating to ABS, Mainsail-style power graph</div>
+  <div class="stage">
+    <div class="titlebar"><span>Voron Preheat</span><span>180° / 245° &nbsp;·&nbsp; 104° / 110° &nbsp;&nbsp; 21:40</span></div>
+    <div class="trow">
+      <div class="action-bar">
+        <div class="ab-btn">‹</div>
+        <div class="ab-btn">⌂</div>
+        <div class="ab-spacer"></div>
+        <div class="ab-estop">STOP</div>
+      </div>
+      <div class="panel">
+        <div class="frame ph-heat">
+          <div class="ph-col">
+            <div class="ph-head"><span class="nm">Extruder</span><span class="right"><span class="tgt">target 245°</span><span class="live hero hot">180°</span></span></div>
+            <div class="ph-slider"><div class="ph-fill" style="width:47.1%"></div><div class="ph-tick" style="left:47.1%"></div><div class="ph-handle" style="left:85.3%"></div></div>
+            <div class="ph-scale"><span style="left:0">100</span><span style="left:29.4%">150</span><span style="left:58.8%">200</span><span style="left:100%">270</span></div>
+            <div class="ph-head"><span class="nm">Bed</span><span class="right"><span class="tgt">target 110°</span><span class="live hot">104°</span></span></div>
+            <div class="ph-slider"><div class="ph-fill" style="width:80%"></div><div class="ph-tick" style="left:80%"></div><div class="ph-handle" style="left:84.6%"></div></div>
+            <div class="ph-scale"><span style="left:0">0</span><span style="left:38.5%">50</span><span style="left:77%">100</span><span style="left:100%">130</span></div>
+            <svg class="graph" width="560" height="212" viewBox="0 0 560 212" preserveAspectRatio="none">
+              <rect x="1" y="1" width="558" height="210" rx="10" fill="#111318" stroke="#262c36" stroke-width="2"/>
+              <!-- power area fills from the floor (duty x plot height) -->
+              <polygon points="14,178 90,178 100,60 210,60 220,120 350,130 480,140 490,140 490,178" fill="rgba(255,176,0,0.20)"/>
+              <polygon points="14,178 60,178 66,88 200,92 340,120 490,128 490,178" fill="rgba(232,234,237,0.13)"/>
+              <!-- light fills under the temperature lines -->
+              <polygon points="14,168 120,166 240,140 360,96 490,52 490,178 14,178" fill="rgba(255,176,0,0.07)"/>
+              <polygon points="14,150 150,132 300,112 420,104 490,102 490,178 14,178" fill="rgba(232,234,237,0.05)"/>
+              <!-- dashed targets with right-edge labels -->
+              <g stroke="#3a414d" stroke-width="2" stroke-dasharray="7 6"><line x1="14" y1="38" x2="490" y2="38"/><line x1="14" y1="98" x2="490" y2="98"/></g>
+              <!-- clock axis -->
+              <g stroke="rgba(58,65,77,0.5)" stroke-width="1"><line x1="150" y1="10" x2="150" y2="178"/><line x1="330" y1="10" x2="330" y2="178"/></g>
+              <!-- temperature lines -->
+              <polyline points="14,168 120,166 240,140 360,96 490,52" fill="none" stroke="#ffb000" stroke-width="4"/>
+              <polyline points="14,150 150,132 300,112 420,104 490,102" fill="none" stroke="rgba(232,234,237,0.65)" stroke-width="3"/>
+              <g font-family="Space Grotesk" font-size="17" fill="#7b7d86">
+                <text x="498" y="44">245</text><text x="498" y="104">110</text><text x="16" y="26">last 6 min</text>
+              </g>
+              <g font-family="Space Grotesk" font-size="15" fill="#6b6e78" text-anchor="middle">
+                <text x="150" y="200">21:36</text><text x="330" y="200">21:38</text>
+              </g>
+            </svg>
+          </div>
+          <div class="ph-side">
+            <div class="head">Profiles</div>
+            <div class="profile"><span class="nm">PLA</span><span class="tv">215 / 60°</span></div>
+            <div class="profile"><span class="nm">PETG</span><span class="tv">240 / 85°</span></div>
+            <div class="profile on"><span class="nm">ABS</span><span class="tv">245 / 110°</span></div>
+            <div class="profile"><span class="nm">TPU</span><span class="tv">230 / 45°</span></div>
+            <div style="flex:1"></div>
+            <div class="ph-cool">Cool down</div>
+            <div class="ph-hold">Hold 150 / 110°</div>
+          </div>
+        </div>
+        <div class="rail ph-heat"><div class="fill" style="width:63%"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ HOLDING, WITH CHAMBER STRIP ============ -->
+<div class="variant">
+  <div class="caption">Preheat — holding temperature; sensor-only chamber as a narrow status strip</div>
+  <div class="stage">
+    <div class="titlebar"><span>Voron Preheat</span><span>150° / 150° &nbsp;·&nbsp; 100° / 100° &nbsp;&nbsp; 22:05</span></div>
+    <div class="trow">
+      <div class="action-bar">
+        <div class="ab-btn">‹</div>
+        <div class="ab-btn">⌂</div>
+        <div class="ab-spacer"></div>
+        <div class="ab-estop">STOP</div>
+      </div>
+      <div class="panel">
+        <div class="frame ph-heat">
+          <div class="ph-col">
+            <div class="ph-head"><span class="nm">Extruder</span><span class="right"><span class="tgt">target 150°</span><span class="live hero">150°</span></span></div>
+            <div class="ph-slider"><div class="ph-fill" style="width:29.4%"></div><div class="ph-tick" style="left:29.4%"></div><div class="ph-handle" style="left:29.4%"></div></div>
+            <div class="ph-scale"><span style="left:0">100</span><span style="left:29.4%">150</span><span style="left:58.8%">200</span><span style="left:100%">270</span></div>
+            <div class="ph-head"><span class="nm">Bed</span><span class="right"><span class="tgt">target 100°</span><span class="live">100°</span></span></div>
+            <div class="ph-slider"><div class="ph-fill" style="width:77%"></div><div class="ph-tick" style="left:77%"></div><div class="ph-handle" style="left:77%"></div></div>
+            <div class="ph-scale"><span style="left:0">0</span><span style="left:38.5%">50</span><span style="left:77%">100</span><span style="left:100%">130</span></div>
+            <div class="ph-head"><span class="nm">Chamber</span><span class="right"><span class="live">53°</span></span></div>
+            <div class="ph-strip"><div class="ph-fill faint" style="width:53%"></div><div class="ph-tick gray" style="left:53%"></div></div>
+            <svg class="graph" width="560" height="150" viewBox="0 0 560 150" preserveAspectRatio="none">
+              <rect x="1" y="1" width="558" height="148" rx="10" fill="#111318" stroke="#262c36" stroke-width="2"/>
+              <polygon points="14,120 490,120 490,96 14,96" fill="rgba(255,176,0,0.20)"/>
+              <polygon points="14,120 490,120 490,88 14,88" fill="rgba(232,234,237,0.13)"/>
+              <g stroke="#3a414d" stroke-width="2" stroke-dasharray="7 6"><line x1="14" y1="52" x2="490" y2="52"/><line x1="14" y1="70" x2="490" y2="70"/></g>
+              <g stroke="rgba(58,65,77,0.5)" stroke-width="1"><line x1="170" y1="10" x2="170" y2="120"/><line x1="350" y1="10" x2="350" y2="120"/></g>
+              <polyline points="14,52 200,53 360,52 490,52" fill="none" stroke="#ffb000" stroke-width="4"/>
+              <polyline points="14,70 200,70 360,71 490,70" fill="none" stroke="rgba(232,234,237,0.65)" stroke-width="3"/>
+              <g font-family="Space Grotesk" font-size="17" fill="#7b7d86"><text x="498" y="58">150</text><text x="498" y="76">100</text><text x="16" y="26">last 6 min</text></g>
+              <g font-family="Space Grotesk" font-size="15" fill="#6b6e78" text-anchor="middle"><text x="170" y="140">22:02</text><text x="350" y="140">22:04</text></g>
+            </svg>
+          </div>
+          <div class="ph-side">
+            <div class="head">Profiles</div>
+            <div class="profile"><span class="nm">PLA</span><span class="tv">215 / 60°</span></div>
+            <div class="profile"><span class="nm">PETG</span><span class="tv">240 / 85°</span></div>
+            <div class="profile"><span class="nm">ABS</span><span class="tv">245 / 110°</span></div>
+            <div class="profile"><span class="nm">TPU</span><span class="tv">230 / 45°</span></div>
+            <div style="flex:1"></div>
+            <div class="ph-cool">Cool down</div>
+            <div class="ph-hold">Hold 150 / 100°</div>
+          </div>
+        </div>
+        <div class="rail ph-heat"><div class="fill" style="width:100%"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

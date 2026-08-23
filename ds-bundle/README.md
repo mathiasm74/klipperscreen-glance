@@ -41,5 +41,7 @@ Read `styles.css` for every token before styling. Each screen's composition is i
 - Screens/JobStatus — heating / printing / paused / complete states
 - Screens/Home — idle screen with recent prints + start-confirm sheet
 - Screens/Move — tap-to-go bed map, Z height map, verbs
+- Screens/Preheat — heater sliders, Mainsail-style power graph, material profiles
+- Screens/Extrude — hero nozzle temp, queueable strokes with rail count badge
 
 Source repo: klipperscreen-glance (GTK3 theme running on the printer); these cards are faithful web recreations built from the live GTK CSS.

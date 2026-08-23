@@ -46,6 +46,9 @@ class Panel(ScreenPanel):
             self.heaters.append({
                 "device": device, "heater": heater, "name": name,
                 "max": max_t, "readonly": readonly,
+                # nozzle targets never live below 100; cutting the dead range
+                # doubles drag resolution (left edge = off, as on Extrude)
+                "min": 100.0 if device == "extruder" else 0.0,
                 "live": 0.0, "target": 0.0, "pending": None,
             })
 
@@ -162,12 +165,16 @@ class Panel(ScreenPanel):
 
     def _temp_to_x(self, h, area, t):
         x, _y, w, _hh = self._track(h, area)
-        return x + max(0.0, min(1.0, t / h["max"])) * w
+        frac = (t - h["min"]) / (h["max"] - h["min"])
+        return x + max(0.0, min(1.0, frac)) * w
 
     def _x_to_temp(self, h, area, px):
         x, _y, w, _hh = self._track(h, area)
-        t = (px - x) / w * h["max"]
-        return max(0.0, min(h["max"], round(t / SNAP) * SNAP))
+        t = h["min"] + (px - x) / w * (h["max"] - h["min"])
+        t = min(h["max"], round(t / SNAP) * SNAP)
+        if h["min"] > 0 and t <= h["min"] + 2:
+            return 0.0
+        return max(0.0, t)
 
     @staticmethod
     def _rounded(cr, x, y, w, hh, r):
@@ -187,7 +194,7 @@ class Panel(ScreenPanel):
         cr.fill()
 
         live_x = self._temp_to_x(h, area, h["live"])
-        if h["live"] > AMBIENT + 2:
+        if h["live"] > (h["min"] if h["min"] > 0 else AMBIENT + 2):
             self._rounded(cr, x, y, max(live_x - x, 20), hh, min(10, hh // 2))
             # sensor-only rows read as instruments, not controls
             cr.set_source_rgba(1.0, 0.69, 0.0, 0.14 if h["readonly"] else 0.32)
@@ -213,9 +220,9 @@ class Panel(ScreenPanel):
         cr.select_font_face("Space Grotesk")
         cr.set_font_size(18)
         cr.set_source_rgb(0.353, 0.365, 0.4)
-        step = 100 if h["max"] > 200 else 50
-        ticks = [t for t in range(0, int(h["max"]), step)
-                 if h["max"] - t > step * 0.35] + [h["max"]]
+        step = 50
+        ticks = [t for t in range(int(h["min"]), int(h["max"]), step)
+                 if h["max"] - t > step * 0.5] + [h["max"]]
         for t in ticks:
             label = f"{t:.0f}"
             ext = cr.text_extents(label)
