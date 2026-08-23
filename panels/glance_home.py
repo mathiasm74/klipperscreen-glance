@@ -102,7 +102,7 @@ class Panel(ScreenPanel):
                                 ("move", _("MOVE"), self.open_move),
                                 ("filament", _("FILAMENT"), self.open_filament),
                                 ("settings", _("MENU"), self.open_menu)):
-            b = self._gtk.Button(icon, label, None, scale=0.5)
+            b = self._gtk.Button(icon, label, None, scale=1.25)
             b.get_style_context().add_class("glance-home-verb")
             b.set_vexpand(False)
             b.connect("clicked", cb)
