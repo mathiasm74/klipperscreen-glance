@@ -6,6 +6,7 @@
 # standby PRINT_END uses: nozzle 150, bed at the profile temp.
 
 import math
+import time
 
 import gi
 
@@ -225,9 +226,12 @@ class Panel(ScreenPanel):
         return True
 
     def on_graph_draw(self, area, cr):
+        # Mainsail-style: heater power as translucent area fills rising from
+        # the plot floor, light fills under the temperature lines, dashed
+        # target lines, and a wall-clock axis with faint gridlines
         w = area.get_allocated_width()
         hh = area.get_allocated_height()
-        if w < 120 or hh < 60:
+        if w < 120 or hh < 80:
             return True
         gutter = 56
         self._rounded(cr, 1, 1, w - 2, hh - 2, 10)
@@ -239,9 +243,49 @@ class Panel(ScreenPanel):
 
         top_t = max([280.0] + [h["target"] + 20 for h in self.heaters])
         px_w = w - gutter - 16
+        top, bottom = 10, hh - 34                    # 24px time axis below
 
         def ty(t):
-            return 10 + (hh - 20) * (1 - t / top_t)
+            return top + (bottom - top) * (1 - t / top_t)
+
+        def tx(i, n):
+            return 14 + px_w * (i / max(n - 1, 1))
+
+        series = []
+        for h, rgb, line_a, line_w in (
+                (self.heaters[0], (1.0, 0.69, 0.0), 1.0, 4),
+                (self.heaters[1], (0.91, 0.918, 0.929), 0.65, 3)):
+            temps = self._printer.get_temp_store(h["device"], "temperatures",
+                                                 GRAPH_SECONDS)
+            if not temps:
+                continue
+            powers = self._printer.get_temp_store(h["device"], "powers",
+                                                  GRAPH_SECONDS)
+            series.append((h, temps, powers, rgb, line_a, line_w))
+
+        # heater power: area from the floor, height = duty x plot height
+        for h, temps, powers, rgb, _la, _lw in series:
+            if not powers:
+                continue
+            n = len(powers)
+            cr.move_to(tx(0, n), bottom)
+            for i, p in enumerate(powers):
+                cr.line_to(tx(i, n), bottom - max(0.0, min(1.0, p)) * (bottom - top))
+            cr.line_to(tx(n - 1, n), bottom)
+            cr.close_path()
+            cr.set_source_rgba(*rgb, 0.20 if h["device"] == "extruder" else 0.13)
+            cr.fill()
+
+        # light fill under each temperature line
+        for h, temps, _powers, rgb, _la, _lw in series:
+            n = len(temps)
+            cr.move_to(tx(0, n), bottom)
+            for i, t in enumerate(temps):
+                cr.line_to(tx(i, n), ty(max(0.0, min(top_t, t))))
+            cr.line_to(tx(n - 1, n), bottom)
+            cr.close_path()
+            cr.set_source_rgba(*rgb, 0.07)
+            cr.fill()
 
         cr.select_font_face("Space Grotesk")
         cr.set_font_size(17)
@@ -265,24 +309,41 @@ class Panel(ScreenPanel):
                 label_ys.append(ly)
                 cr.move_to(18 + px_w, ly)
                 cr.show_text(f"{h['target']:.0f}")
+
+        # temperature lines on top
+        for h, temps, _powers, rgb, line_a, line_w in series:
+            n = len(temps)
+            cr.set_source_rgba(*rgb, line_a)
+            cr.set_line_width(line_w)
+            for i, t in enumerate(temps):
+                (cr.move_to if i == 0 else cr.line_to)(
+                    tx(i, n), ty(max(0.0, min(top_t, t))))
+            cr.stroke()
+
         cr.set_source_rgb(0.482, 0.49, 0.525)
         cr.move_to(16, 24)
         cr.show_text(_("last 6 min"))
 
-        for h, rgba in ((self.heaters[0], (1.0, 0.69, 0.0, 1.0)),
-                        (self.heaters[1], (0.91, 0.918, 0.929, 0.65))):
-            temps = self._printer.get_temp_store(h["device"], "temperatures",
-                                                 GRAPH_SECONDS)
-            if not temps:
-                continue
-            n = len(temps)
-            cr.set_source_rgba(*rgba)
-            cr.set_line_width(4 if h["device"] == "extruder" else 3)
-            for i, t in enumerate(temps):
-                px = 14 + px_w * (i / max(n - 1, 1))
-                py = ty(max(0.0, min(top_t, t)))
-                (cr.move_to if i == 0 else cr.line_to)(px, py)
-            cr.stroke()
+        # wall-clock axis: gridline + HH:MM at even 2-minute marks
+        if series:
+            n = len(series[0][1])
+            now = time.time()
+            cr.set_font_size(15)
+            ts = (int(now) // 120) * 120
+            while now - ts < n - 1:
+                x = tx(n - 1 - (now - ts), n)
+                if x > 40:
+                    cr.set_source_rgba(0.227, 0.255, 0.302, 0.5)
+                    cr.set_line_width(1)
+                    cr.move_to(x, top)
+                    cr.line_to(x, bottom)
+                    cr.stroke()
+                    label = time.strftime("%H:%M", time.localtime(ts))
+                    ext = cr.text_extents(label)
+                    cr.set_source_rgb(0.42, 0.43, 0.47)
+                    cr.move_to(x - ext.width / 2, hh - 12)
+                    cr.show_text(label)
+                ts -= 120
         return True
 
     # ---- input --------------------------------------------------------------
