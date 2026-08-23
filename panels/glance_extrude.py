@@ -35,6 +35,7 @@ class Panel(ScreenPanel):
         self.stroke_timer = None
         self.stroke_ticks = 0
         self.stroke_total = 0
+        self.stroke_queue = []   # tick totals for strokes waiting behind the current one
 
         cfg = self._printer.get_config_section("extruder")
         try:
@@ -135,13 +136,22 @@ class Panel(ScreenPanel):
         self.rail = Gtk.ProgressBar(hexpand=True)
         self.rail.get_style_context().add_class("glance-rail")
         self.rail.set_size_request(-1, 32)
+        # queued-stroke count rides on the rail's right end
+        self.queue_lbl = Gtk.Label(label="", halign=Gtk.Align.END,
+                                   valign=Gtk.Align.CENTER)
+        self.queue_lbl.set_margin_end(12)
+        self.queue_lbl.get_style_context().add_class("glance-queue-count")
+        rail_overlay = Gtk.Overlay()
+        rail_overlay.add(self.rail)
+        rail_overlay.add_overlay(self.queue_lbl)
+        rail_overlay.set_overlay_pass_through(self.queue_lbl, True)
 
         self.root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.root.get_style_context().add_class("glance-root")
         self.root.pack_start(main, True, True, 0)
         inner = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         inner.pack_start(self.root, True, True, 0)
-        inner.pack_end(self.rail, False, False, 0)
+        inner.pack_end(rail_overlay, False, False, 0)
         self.content.pack_start(inner, True, True, 0)
         for w in (self.root, self.rail):
             w.get_style_context().add_class("ph-prep")
@@ -279,26 +289,40 @@ class Panel(ScreenPanel):
         self._select(buttons, widget)
 
     def stroke(self, widget, sign):
-        if not self.can_extrude or self.stroke_timer:
+        if not self.can_extrude:
             return
+        # Klipper's gcode queue serializes the moves; tapping while a stroke
+        # runs queues another and the rail animates through them in turn
         self._screen._ws.klippy.gcode_script(
             f"M83\nG1 E{sign * self.distance} F{self.speed * 60}")
-        # the rail shows the stroke: fill over the move's real duration
-        self.stroke_total = max(1, int(self.distance / self.speed * 1000
-                                       / RAIL_TICK_MS))
-        self.stroke_ticks = 0
-        self._gate_verbs(False)
-        self.stroke_timer = GLib.timeout_add(RAIL_TICK_MS, self._stroke_tick)
+        ticks = max(1, int(self.distance / self.speed * 1000 / RAIL_TICK_MS))
+        if self.stroke_timer:
+            self.stroke_queue.append(ticks)
+        else:
+            self.stroke_total = ticks
+            self.stroke_ticks = 0
+            self.stroke_timer = GLib.timeout_add(RAIL_TICK_MS,
+                                                 self._stroke_tick)
+        self._update_queue_lbl()
 
     def _stroke_tick(self):
         self.stroke_ticks += 1
         if self.stroke_ticks >= self.stroke_total:
             self.rail.set_fraction(0)
+            if self.stroke_queue:
+                self.stroke_total = self.stroke_queue.pop(0)
+                self.stroke_ticks = 0
+                self._update_queue_lbl()
+                return True
             self.stroke_timer = None
-            self._gate_verbs(self.can_extrude)
+            self._update_queue_lbl()
             return False
         self.rail.set_fraction(self.stroke_ticks / self.stroke_total)
         return True
+
+    def _update_queue_lbl(self):
+        n = (1 if self.stroke_timer else 0) + len(self.stroke_queue)
+        self.queue_lbl.set_label(f"{n}\u00d7" if n >= 2 else "")
 
     def run_macro(self, widget, macro):
         if not self.can_extrude:
@@ -353,12 +377,13 @@ class Panel(ScreenPanel):
                 self.sub_lbl.set_label(_("nozzle cold — heat to move filament"))
         if self.pending is None:
             self._show_target(self.target)
-        if not self.stroke_timer:
-            self._gate_verbs(self.can_extrude)
+        self._gate_verbs(self.can_extrude)
         self.slider.queue_draw()
 
     def deactivate(self):
+        self.stroke_queue.clear()
         if self.stroke_timer:
             GLib.source_remove(self.stroke_timer)
             self.stroke_timer = None
             self.rail.set_fraction(0)
+            self._update_queue_lbl()

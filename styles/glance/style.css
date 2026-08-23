@@ -363,3 +363,9 @@ button.active label {
 }
 .glance-ext-lu { min-height: 48px; }
 .glance-ext-lu label { font-size: 24px; }
+/* queued-stroke count riding on the progress rail */
+.glance-queue-count {
+    font-size: 20px;
+    font-weight: bold;
+    color: @text;
+}
