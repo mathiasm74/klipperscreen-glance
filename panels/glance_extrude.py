@@ -322,7 +322,7 @@ class Panel(ScreenPanel):
 
     def _update_queue_lbl(self):
         n = (1 if self.stroke_timer else 0) + len(self.stroke_queue)
-        self.queue_lbl.set_label(f"{n}\u00d7" if n >= 2 else "")
+        self.queue_lbl.set_label(f"{n}\u00d7" if n >= 1 else "")
 
     def run_macro(self, widget, macro):
         if not self.can_extrude:
