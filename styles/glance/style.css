@@ -220,8 +220,15 @@ button {
 
 /* segmented chip rows are ONE control: base.css rounds the row's outer ends
    .75em while our global button rule rounds every seam 10px - mismatched
-   pills. Square the seams, and give the outer ends the standard 10px. */
-.horizontal_togglebuttons { border-radius: 0; }
+   pills. Square the seams, give the outer ends the standard 10px, and swap
+   base's loud near-white .15em border for the quiet card keyline. */
+.horizontal_togglebuttons {
+    border-radius: 0;
+    background-color: #16181d;
+    border-color: #262c36;
+    border-width: 1px;
+    border-right-width: 0;
+}
 .horizontal_togglebuttons:first-child {
     border-top-left-radius: 10px;
     border-bottom-left-radius: 10px;
@@ -229,6 +236,7 @@ button {
 .horizontal_togglebuttons:last-child {
     border-top-right-radius: 10px;
     border-bottom-right-radius: 10px;
+    border-right-width: 1px;
 }
 
 /* selected / toggled buttons anywhere in the UI: solid accent fill with dark
