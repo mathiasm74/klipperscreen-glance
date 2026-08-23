@@ -15,10 +15,10 @@ from gi.repository import Gdk, GLib, Gtk
 from ks_includes.screen_panel import ScreenPanel
 
 SNAP = 5            # ° target snap while dragging
-OFF_BELOW = 10      # ° dragging under this releases to "off"
+SCALE_MIN = 100     # ° left end of the slider; releasing at the edge = off
 AMBIENT = 25
 DISTANCES = (5, 10, 15, 25)   # mm
-SPEEDS = (1, 2, 5, 25)        # mm/s
+SPEEDS = (1, 2, 5, 10)        # mm/s
 RAIL_TICK_MS = 80
 
 
@@ -196,12 +196,14 @@ class Panel(ScreenPanel):
 
     def _temp_to_x(self, t):
         x, _y, w, _hh = self._track()
-        return x + max(0.0, min(1.0, t / self.max_temp)) * w
+        frac = (t - SCALE_MIN) / (self.max_temp - SCALE_MIN)
+        return x + max(0.0, min(1.0, frac)) * w
 
     def _x_to_temp(self, px):
         x, _y, w, _hh = self._track()
-        t = (px - x) / w * self.max_temp
-        return max(0.0, min(self.max_temp, round(t / SNAP) * SNAP))
+        t = SCALE_MIN + (px - x) / w * (self.max_temp - SCALE_MIN)
+        t = min(self.max_temp, round(t / SNAP) * SNAP)
+        return 0.0 if t <= SCALE_MIN + 2 else t
 
     @staticmethod
     def _rounded(cr, x, y, w, hh, r):
@@ -218,7 +220,7 @@ class Panel(ScreenPanel):
         cr.set_source_rgb(0.086, 0.094, 0.113)
         cr.fill()
         live_x = self._temp_to_x(self.live)
-        if self.live > AMBIENT + 2:
+        if self.live > SCALE_MIN:
             self._rounded(cr, x, y, max(live_x - x, 20), hh, 10)
             cr.set_source_rgba(1.0, 0.69, 0.0, 0.32)
             cr.fill()
@@ -234,9 +236,9 @@ class Panel(ScreenPanel):
         cr.select_font_face("Space Grotesk")
         cr.set_font_size(18)
         cr.set_source_rgb(0.353, 0.365, 0.4)
-        step = 100 if self.max_temp > 200 else 50
-        ticks = [t for t in range(0, int(self.max_temp), step)
-                 if self.max_temp - t > step * 0.35] + [self.max_temp]
+        step = 50
+        ticks = [t for t in range(SCALE_MIN, int(self.max_temp), step)
+                 if self.max_temp - t > step * 0.5] + [self.max_temp]
         for t in ticks:
             label = f"{t:.0f}"
             ext = cr.text_extents(label)
@@ -260,8 +262,6 @@ class Panel(ScreenPanel):
     def on_slider_release(self, area, event):
         t = self._x_to_temp(event.x)
         self.pending = None
-        if t < OFF_BELOW:
-            t = 0.0
         self._screen._ws.klippy.gcode_script(
             f"SET_HEATER_TEMPERATURE HEATER=extruder TARGET={t:.0f}")
         return True
