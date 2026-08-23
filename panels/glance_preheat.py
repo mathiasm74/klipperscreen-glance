@@ -49,7 +49,7 @@ class Panel(ScreenPanel):
             })
 
         # ---- left: slider rows + history graph ----
-        left = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10,
+        left = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6,
                        hexpand=True, vexpand=True)
         for h in self.heaters:
             head = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=14)
@@ -67,7 +67,7 @@ class Panel(ScreenPanel):
                 head.pack_end(h["target_lbl"], False, False, 0)
 
             area = Gtk.DrawingArea(hexpand=True)
-            area.set_size_request(-1, 64)
+            area.set_size_request(-1, 52)
             area.connect("draw", self.on_slider_draw, h)
             if not h["readonly"]:
                 area.add_events(Gdk.EventMask.BUTTON_PRESS_MASK
@@ -152,10 +152,10 @@ class Panel(ScreenPanel):
 
     @staticmethod
     def _track(area):
-        # trough box inside the drawing area: 6px top pad, 34px tall,
-        # 24px reserved below for the scale labels
+        # trough box inside the drawing area: 8px top pad (the target
+        # handle overhangs it), 26px tall, 18px below for the scale labels
         w = area.get_allocated_width()
-        return 2, 6, w - 4, 34
+        return 2, 8, w - 4, 26
 
     def _temp_to_x(self, h, area, t):
         x, _y, w, _hh = self._track(area)
@@ -199,13 +199,13 @@ class Panel(ScreenPanel):
         target = h["pending"] if h["pending"] is not None else h["target"]
         if target > 0:
             tx = self._temp_to_x(h, area, target)
-            self._rounded(cr, tx - 3.5, y - 8, 7, hh + 16, 3.5)
+            self._rounded(cr, tx - 3.5, y - 7, 7, hh + 14, 3.5)
             cr.set_source_rgb(0.2, 0.773, 0.91)      # cyan handle
             cr.fill()
 
         # scale labels at round temperatures, plus the range end
         cr.select_font_face("Space Grotesk")
-        cr.set_font_size(18)
+        cr.set_font_size(16)
         cr.set_source_rgb(0.353, 0.365, 0.4)
         step = 100 if h["max"] > 200 else 50
         ticks = [t for t in range(0, int(h["max"]), step)
@@ -215,7 +215,7 @@ class Panel(ScreenPanel):
             ext = cr.text_extents(label)
             lx = self._temp_to_x(h, area, t)
             lx = max(x, min(x + w - ext.width, lx - ext.width / 2))
-            cr.move_to(lx, y + hh + 22)
+            cr.move_to(lx, y + hh + 16)
             cr.show_text(label)
         return True
 
