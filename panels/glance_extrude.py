@@ -137,9 +137,9 @@ class Panel(ScreenPanel):
         self.rail.get_style_context().add_class("glance-rail")
         self.rail.set_size_request(-1, 32)
         # queued-stroke count rides on the rail's right end
-        self.queue_lbl = Gtk.Label(label="", halign=Gtk.Align.END,
+        self.queue_lbl = Gtk.Label(label="", halign=Gtk.Align.START,
                                    valign=Gtk.Align.CENTER)
-        self.queue_lbl.set_margin_end(12)
+        self.queue_lbl.set_margin_start(12)
         self.queue_lbl.get_style_context().add_class("glance-queue-count")
         rail_overlay = Gtk.Overlay()
         rail_overlay.add(self.rail)
