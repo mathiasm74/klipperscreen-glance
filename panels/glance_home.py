@@ -93,15 +93,21 @@ class Panel(ScreenPanel):
             side.pack_start(row, False, False, 0)
             self.cards.append({"btn": row, "img": None, "name": name, "time": t})
 
-        actions = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        for label, cb in ((_("Preheat"), self.open_preheat), (_("Move"), self.open_move),
-                          (_("Filament"), self.open_filament), ("• • •", self.open_menu)):
-            b = Gtk.Button(label=label)
-            b.get_style_context().add_class("glance-row-btn")
-            b.set_hexpand(False)
+        # verb cards live under the hero (per the original design mock):
+        # icon over an uppercase label
+        actions = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12,
+                          homogeneous=True)
+        actions.set_margin_top(12)
+        for icon, label, cb in (("heat-up", _("PREHEAT"), self.open_preheat),
+                                ("move", _("MOVE"), self.open_move),
+                                ("filament", _("FILAMENT"), self.open_filament),
+                                ("settings", _("MENU"), self.open_menu)):
+            b = self._gtk.Button(icon, label, None, scale=0.5)
+            b.get_style_context().add_class("glance-home-verb")
+            b.set_vexpand(False)
             b.connect("clicked", cb)
             actions.pack_start(b, True, True, 0)
-        side.pack_end(actions, False, False, 0)
+        hero.pack_start(actions, False, False, 4)
 
         main = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True, vexpand=True)
         main.pack_start(hero, True, True, 0)

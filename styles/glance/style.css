@@ -235,6 +235,19 @@ button.active label {
     font-weight: bold;
 }
 
+/* home verb cards under the hero: icon over uppercase label */
+.glance-home-verb {
+    min-height: 96px;
+    border-radius: 14px;
+    padding: 8px 4px;
+    background-color: #14171d;
+    border: 1px solid #262c36;
+}
+.glance-home-verb label {
+    font-size: 19px;
+    color: #b9bcc4;
+}
+
 /* home screen recent-file cards */
 .glance-card {
     background-color: #14171d;
