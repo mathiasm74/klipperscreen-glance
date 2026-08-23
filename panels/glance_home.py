@@ -294,7 +294,7 @@ class Panel(ScreenPanel):
         self._screen.show_panel("glance_move")
 
     def open_filament(self, widget):
-        self._screen.show_panel("extrude")
+        self._screen.show_panel("glance_extrude")
 
     def open_menu(self, widget):
         self._screen.show_panel("main_menu", items=self._config.get_menu_items("__main"))

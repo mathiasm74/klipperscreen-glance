@@ -349,3 +349,17 @@ button.active label {
 .glance-cool { min-height: 42px; padding: 2px 8px; font-size: 24px; }
 .glance-hold { min-height: 52px; padding: 2px 8px; }
 .glance-hold label { color: @ph-print; font-size: 26px; font-weight: bold; }
+
+/* ---- glance extrude panel ---- */
+
+/* big Retract/Extrude cards; Extrude is the green "go" verb */
+.glance-ext-verb { min-height: 104px; border-radius: 14px; }
+.glance-ext-verb label { font-size: 34px; }
+.glance-ext-verb .glance-ext-sub { font-size: 22px; color: @glance-dim; }
+.glance-ext-go label { color: @ph-print; font-weight: bold; }
+.glance-ext-go .glance-ext-sub {
+    color: @glance-dim;
+    font-weight: normal;
+}
+.glance-ext-lu { min-height: 48px; }
+.glance-ext-lu label { font-size: 24px; }

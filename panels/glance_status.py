@@ -619,7 +619,7 @@ class Panel(ScreenPanel):
         self._screen._ws.klippy.gcode_script(macro)
 
     def open_extrude(self, widget):
-        self._screen.show_panel("extrude")
+        self._screen.show_panel("glance_extrude")
 
     def adjust_speed(self, widget, direction):
         self.speed_pct = min(max(self.speed_pct + 5 * direction, 10), 300)
