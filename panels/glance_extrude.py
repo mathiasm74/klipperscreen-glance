@@ -89,6 +89,8 @@ class Panel(ScreenPanel):
         self.btn_retract["btn"].connect("clicked", self.stroke, -1)
         self.btn_extrude["btn"].connect("clicked", self.stroke, +1)
         verbs = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        # top of the cards sits level with the bottom of the EXTRUDER title
+        verbs.set_margin_top(32)
         verbs.pack_start(self.btn_retract["btn"], True, True, 0)
         verbs.pack_start(self.btn_extrude["btn"], True, True, 0)
         side.pack_start(verbs, False, False, 0)
