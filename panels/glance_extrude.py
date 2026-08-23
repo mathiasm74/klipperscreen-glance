@@ -41,6 +41,12 @@ class Panel(ScreenPanel):
             self.max_temp = float(cfg["max_temp"])
         except (TypeError, KeyError, ValueError):
             self.max_temp = 270
+        # can_extrude isn't in KlipperScreen's live status subscription, so it
+        # freezes at panel-load value; derive it from the live temp instead
+        try:
+            self.min_extrude_temp = float(cfg["min_extrude_temp"])
+        except (TypeError, KeyError, ValueError):
+            self.min_extrude_temp = 170.0
 
         # ---- left: hero temp + temperature slider ----
         phase = Gtk.Label(label=_("EXTRUDER"), xalign=0)
@@ -325,8 +331,7 @@ class Panel(ScreenPanel):
             return
         self.live = float(live)
         self.target = float(self._printer.get_stat("extruder", "target") or 0)
-        self.can_extrude = bool(self._printer.get_stat("extruder",
-                                                       "can_extrude"))
+        self.can_extrude = self.live >= self.min_extrude_temp
         bed = self._printer.get_stat("heater_bed", "temperature")
 
         self.hero.set_label(f"{self.live:.0f}°")
