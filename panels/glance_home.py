@@ -76,7 +76,9 @@ class Panel(ScreenPanel):
         side.pack_start(big_card, True, True, 0)
         self.cards.append({"btn": big_card, "img": img, "name": name0, "time": time0})
 
-        for i in (1, 2):
+        # older files: compact rows in a touch-scrollable list
+        rows_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        for i in range(1, 10):
             row = Gtk.Button()
             rbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
             name = Gtk.Label(label="", xalign=0, hexpand=True)
@@ -90,8 +92,17 @@ class Panel(ScreenPanel):
             row.add(rbox)
             row.get_style_context().add_class("glance-card")
             row.connect("clicked", self.card_clicked, i)
-            side.pack_start(row, False, False, 0)
+            # empty rows must stay hidden through the panel's show_all()
+            row.set_no_show_all(True)
+            rows_box.pack_start(row, False, False, 0)
             self.cards.append({"btn": row, "img": None, "name": name, "time": t})
+        scroller = self._gtk.ScrolledWindow(steppers=False)
+        scroller.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        # overlay the scrollbar so rows keep the column's full width
+        scroller.set_overlay_scrolling(True)
+        scroller.set_size_request(-1, 132)
+        scroller.add(rows_box)
+        side.pack_start(scroller, False, False, 0)
 
         # verb cards live under the hero (per the original design mock):
         # icon over an uppercase label
@@ -203,7 +214,7 @@ class Panel(ScreenPanel):
         files = [(name, meta) for name, meta in self._files.files.items()
                  if name.lower().endswith(".gcode")]
         files.sort(key=lambda kv: kv[1].get("modified", 0), reverse=True)
-        self.recent = [name for name, _m in files[:3]]
+        self.recent = [name for name, _m in files[:len(self.cards)]]
         for i, card in enumerate(self.cards):
             if i < len(self.recent):
                 name = self.recent[i]
@@ -219,6 +230,8 @@ class Panel(ScreenPanel):
                     else:
                         card["img"].clear()
                 card["btn"].show()
+                if card["img"] is None:
+                    card["btn"].get_child().show_all()
             else:
                 card["btn"].hide()
 
