@@ -67,7 +67,7 @@ class Panel(ScreenPanel):
                 head.pack_end(h["target_lbl"], False, False, 0)
 
             area = Gtk.DrawingArea(hexpand=True)
-            area.set_size_request(-1, 64)
+            area.set_size_request(-1, 16 if h["readonly"] else 64)
             area.connect("draw", self.on_slider_draw, h)
             if not h["readonly"]:
                 area.add_events(Gdk.EventMask.BUTTON_PRESS_MASK
@@ -151,18 +151,20 @@ class Panel(ScreenPanel):
     # ---- slider geometry ----------------------------------------------------
 
     @staticmethod
-    def _track(area):
-        # trough box inside the drawing area: 6px top pad, 34px tall,
-        # 24px reserved below for the scale labels
+    def _track(h, area):
+        # trough box inside the drawing area: 6px top pad, 34px tall, 24px
+        # below for the scale labels. Read-only rows are a bare 10px strip.
         w = area.get_allocated_width()
+        if h["readonly"]:
+            return 2, 3, w - 4, 10
         return 2, 6, w - 4, 34
 
     def _temp_to_x(self, h, area, t):
-        x, _y, w, _hh = self._track(area)
+        x, _y, w, _hh = self._track(h, area)
         return x + max(0.0, min(1.0, t / h["max"])) * w
 
     def _x_to_temp(self, h, area, px):
-        x, _y, w, _hh = self._track(area)
+        x, _y, w, _hh = self._track(h, area)
         t = (px - x) / w * h["max"]
         return max(0.0, min(h["max"], round(t / SNAP) * SNAP))
 
@@ -178,14 +180,14 @@ class Panel(ScreenPanel):
     # ---- drawing ------------------------------------------------------------
 
     def on_slider_draw(self, area, cr, h):
-        x, y, w, hh = self._track(area)
-        self._rounded(cr, x, y, w, hh, 10)
+        x, y, w, hh = self._track(h, area)
+        self._rounded(cr, x, y, w, hh, min(10, hh // 2))
         cr.set_source_rgb(0.086, 0.094, 0.113)      # #16181d
         cr.fill()
 
         live_x = self._temp_to_x(h, area, h["live"])
         if h["live"] > AMBIENT + 2:
-            self._rounded(cr, x, y, max(live_x - x, 20), hh, 10)
+            self._rounded(cr, x, y, max(live_x - x, 20), hh, min(10, hh // 2))
             # sensor-only rows read as instruments, not controls
             cr.set_source_rgba(1.0, 0.69, 0.0, 0.14 if h["readonly"] else 0.32)
             cr.fill()
@@ -193,8 +195,11 @@ class Panel(ScreenPanel):
             cr.set_source_rgb(0.482, 0.49, 0.525)    # gray tick, no handle
         else:
             cr.set_source_rgb(0.91, 0.918, 0.929)    # live tick
-        cr.rectangle(live_x - 2, y - 4, 4, hh + 8)
+        pad = 3 if h["readonly"] else 4
+        cr.rectangle(live_x - 2, y - pad, 4, hh + 2 * pad)
         cr.fill()
+        if h["readonly"]:
+            return True                              # no scale, no handle
 
         target = h["pending"] if h["pending"] is not None else h["target"]
         if target > 0:
