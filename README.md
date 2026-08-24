@@ -40,7 +40,11 @@ A print walks the job screen through its phases:
 | ![Job paused](screenshots/job-paused.png) | ![Job done](screenshots/job-done.png) |
 | **Paused** — filament controls swap in; resume/stop verbs | **Done** — violet phase, temps cooling, Save Z |
 
-## Install (on the printer Pi, KlipperScreen v0.4.x)
+## How to install
+
+Glance is an add-on, not a standalone app: it requires a working
+KlipperScreen (v0.4.x) already installed and showing on your printer's
+display. SSH onto the device running KlipperScreen, then:
 
 ```
 cd ~ && git clone https://github.com/mathiasm74/klipperscreen-glance.git
