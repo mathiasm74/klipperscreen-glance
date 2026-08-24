@@ -1,11 +1,41 @@
 # Glance — at-a-glance KlipperScreen UI
 
-Custom theme + panels for my Voron 2 (1024×600 touchscreen). One idea
-throughout: each screen shows a single huge phase-colored figure you can
-read from across the room, framed by a border whose bottom edge is the
-progress rail. Phases: HEATING (amber) → LEVELING/MESHING (cyan) →
-PRINTING (green) → DONE (violet) → error (red), driven by print_stats
-plus the M117 protocol emitted by PRINT_START in my Klipper config repo.
+## Why
+
+KlipperScreen is superb at what it sets out to be: a complete touch
+control panel for Klipper. Every heater, fan, macro, file, and setting is
+reachable; it runs on nearly any screen; the panel framework and theming
+underneath are solid enough that a project like this one can be built as
+a handful of drop-in files. If something can be done to a printer,
+KlipperScreen has a panel for it.
+
+But completeness sets the design center at *operating* the printer, and a
+printer display spends almost all of its life being *looked at* instead —
+from across the room, mid-task, fifty times per print. The questions that
+actually matter at that distance (is it printing? how far along? is it
+still heating? did something go wrong?) are answered in small, uniformly
+weighted text that all needs walking up to and reading. And a screen that
+shows everything can also touch everything: safety-relevant settings sit
+one mis-tap from everyday controls.
+
+Glance reorders those priorities. Each screen shows one huge figure in a
+phase color — amber heating, cyan leveling/meshing, green printing,
+violet done, red error — inside a frame whose bottom edge is the progress
+rail, so the machine's state and progress are readable from meters away,
+in peripheral vision, before any text resolves. Everything else is
+deliberately demoted. The handful of controls you genuinely use standing
+at the printer — reprint, preheat, move, filament — are big, direct, and
+shaped like the task: a bed map you tap instead of jog arrows, heater
+sliders you drag instead of number steppers, extrude strokes that queue
+on repeated taps. Controls gate themselves on machine state (no cold
+extrusion, no mesh before homing), and what the config can't back simply
+isn't shown.
+
+It's built **on** KlipperScreen, not against it: five drop-in panels, one
+theme, and a two-line patch. The stock panels remain a menu away for the
+long tail of everything else — that part KlipperScreen already does
+better than anyone. Phases are driven by print_stats plus a small M117
+protocol emitted from PRINT_START (see `klipper/glance.cfg`).
 
 ## Screens
 
