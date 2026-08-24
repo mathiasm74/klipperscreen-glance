@@ -22,7 +22,7 @@ printer controls; Glance is for everything you want to know at a glance.
 
 ## Screens
 
-![Control screens](screenshots/control-screens.gif)
+![Tour](screenshots/tour.gif)
 
 | | |
 |---|---|
@@ -32,8 +32,6 @@ printer controls; Glance is for everything you want to know at a glance.
 | **Preheat** — draggable heater sliders, Mainsail-style power graph, material profiles | **Extrude** — queueable strokes with rail count badge, cold-gated verbs |
 
 A print walks the job screen through its phases:
-
-![Print phases](screenshots/print-phases.gif)
 
 | | |
 |---|---|
