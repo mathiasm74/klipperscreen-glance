@@ -22,18 +22,48 @@ printer controls; Glance is for everything you want to know at a glance.
 
 ## Screens
 
-| | |
-|---|---|
-| <img alt="Home" src="screenshots/home.png" width="420"> | <img alt="Heating" src="screenshots/job-heating.png" width="420"> |
-| **Home** — idle screen: READY/WARM/HEATING hero, icon verb cards, scrollable print-again history | **Heating** — amber, ambient-referenced percent from the M117 heat bars |
-| <img alt="Leveling" src="screenshots/job-leveling.png" width="420"> | <img alt="Meshing" src="screenshots/job-meshing.png" width="420"> |
-| **Leveling** — cyan, QGL driven by the heat-soak gate | **Meshing** — fresh bed mesh when the soak gate demands one |
-| <img alt="Printing" src="screenshots/job-printing.png" width="420"> | <img alt="Paused" src="screenshots/job-paused.png" width="420"> |
-| **Printing** — green percent, time left + ETA, Speed and Z-offset steppers | **Paused** — filament controls swap in; resume/stop verbs |
-| <img alt="Done" src="screenshots/job-done.png" width="420"> | <img alt="Move" src="screenshots/move.png" width="420"> |
-| **Done** — violet phase, temps cooling, Save Z | **Move** — tap-to-go bed map, Z height map, one-tap verbs |
-| <img alt="Preheat" src="screenshots/preheat.png" width="420"> | <img alt="Extrude" src="screenshots/extrude.png" width="420"> |
-| **Preheat** — draggable heater sliders, Mainsail-style power graph, material profiles | **Extrude** — queueable strokes with rail count badge, cold-gated verbs |
+<table>
+<tr>
+<td width="50%"><img alt="Home" src="screenshots/home.png"></td>
+<td width="50%"><img alt="Heating" src="screenshots/job-heating.png"></td>
+</tr>
+<tr>
+<td width="50%"><b>Home</b> — idle screen: READY/WARM/HEATING hero, icon verb cards, scrollable print-again history</td>
+<td width="50%"><b>Heating</b> — amber, ambient-referenced percent from the M117 heat bars</td>
+</tr>
+<tr>
+<td width="50%"><img alt="Leveling" src="screenshots/job-leveling.png"></td>
+<td width="50%"><img alt="Meshing" src="screenshots/job-meshing.png"></td>
+</tr>
+<tr>
+<td width="50%"><b>Leveling</b> — cyan, QGL driven by the heat-soak gate</td>
+<td width="50%"><b>Meshing</b> — fresh bed mesh when the soak gate demands one</td>
+</tr>
+<tr>
+<td width="50%"><img alt="Printing" src="screenshots/job-printing.png"></td>
+<td width="50%"><img alt="Paused" src="screenshots/job-paused.png"></td>
+</tr>
+<tr>
+<td width="50%"><b>Printing</b> — green percent, time left + ETA, Speed and Z-offset steppers</td>
+<td width="50%"><b>Paused</b> — filament controls swap in; resume/stop verbs</td>
+</tr>
+<tr>
+<td width="50%"><img alt="Done" src="screenshots/job-done.png"></td>
+<td width="50%"><img alt="Move" src="screenshots/move.png"></td>
+</tr>
+<tr>
+<td width="50%"><b>Done</b> — violet phase, temps cooling, Save Z</td>
+<td width="50%"><b>Move</b> — tap-to-go bed map, Z height map, one-tap verbs</td>
+</tr>
+<tr>
+<td width="50%"><img alt="Preheat" src="screenshots/preheat.png"></td>
+<td width="50%"><img alt="Extrude" src="screenshots/extrude.png"></td>
+</tr>
+<tr>
+<td width="50%"><b>Preheat</b> — draggable heater sliders, Mainsail-style power graph, material profiles</td>
+<td width="50%"><b>Extrude</b> — queueable strokes with rail count badge, cold-gated verbs</td>
+</tr>
+</table>
 
 ## How to install
 
