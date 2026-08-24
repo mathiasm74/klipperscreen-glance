@@ -19,6 +19,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import GLib, Gtk, Pango
 from ks_includes.screen_panel import ScreenPanel
+from panels.glance_metrics import px
 from ks_includes.KlippyGtk import find_widget
 
 # matches the M117 lines from _HEAT_WAIT: "██░░ 23% Bed 45/110" or "... 100% Bed 110"
@@ -109,7 +110,7 @@ class Panel(ScreenPanel):
                 # arrows as overlay children: they draw above/below the digit
                 # but cost zero height, so full-size arrows fit in a fixed box
                 holder = Gtk.Box()
-                holder.set_size_request(-1, 60)
+                holder.set_size_request(-1, px(screen, 60))
                 d.set_valign(Gtk.Align.CENTER)
                 holder.add(d)
                 ov = Gtk.Overlay()
@@ -149,6 +150,11 @@ class Panel(ScreenPanel):
         self.btn_load.connect("clicked", self.filament_action, "LOAD_FILAMENT")
         self.ext_more = Gtk.Button(label=_("Filament / extrude panel"))
         self.ext_more.get_style_context().add_class("glance-row-btn")
+        # portability: hide what this printer's config can't back
+        self.has_probe = bool(self._printer.get_config_section_list("probe"))
+        self.has_filament_macros = (
+            self._printer.config_section_exists("gcode_macro UNLOAD_FILAMENT")
+            and self._printer.config_section_exists("gcode_macro LOAD_FILAMENT"))
         self.ext_more.set_hexpand(False)
         self.ext_more.connect("clicked", self.open_extrude)
 
@@ -218,7 +224,7 @@ class Panel(ScreenPanel):
 
         self.rail = Gtk.ProgressBar(hexpand=True)
         self.rail.get_style_context().add_class("glance-rail")
-        self.rail.set_size_request(-1, 32)  # keep the rail on-screen even if the hero is tight
+        self.rail.set_size_request(-1, px(screen, 32))  # keep the rail on-screen even if the hero is tight
 
         self.root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.root.get_style_context().add_class("glance-root")
@@ -256,7 +262,7 @@ class Panel(ScreenPanel):
         val_lbl = Gtk.Label(label="100%")
         val_lbl.get_style_context().add_class("glance-temp-val")
         # fixed width so changing digit counts can't nudge the buttons around
-        val_lbl.set_size_request(96, -1)
+        val_lbl.set_size_request(px(self._screen, 96), -1)
         minus = Gtk.Button(label="−")
         plus = Gtk.Button(label="+")
         for w in (minus, plus, val_lbl):
@@ -329,7 +335,7 @@ class Panel(ScreenPanel):
         self.btn_resume.set_visible(paused)
         self.btn_stop.set_visible(not job_over)
         self.btn_close.set_visible(job_over)
-        self.btn_save.set_visible(self.state == "complete")
+        self.btn_save.set_visible(self.state == "complete" and self.has_probe)
         # pause can't act until PRINT_START releases the gcode queue, so
         # don't offer it before the print phase - cancel is the real option.
         # busy buttons stay insensitive until their state transition lands.
@@ -341,7 +347,8 @@ class Panel(ScreenPanel):
         temps = not running and not paused
         for w, vis in ((self.noz_row, temps), (self.bed_row, temps),
                        (self.speed_row, running), (self.zoff_row, running),
-                       (self.ext_row, paused), (self.ext_more, paused)):
+                       (self.ext_row, paused and self.has_filament_macros),
+                       (self.ext_more, paused)):
             w.set_visible(vis)
 
     def refresh_view(self):

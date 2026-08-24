@@ -13,6 +13,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gdk, Gtk
 from ks_includes.screen_panel import ScreenPanel
+from panels.glance_metrics import px
 
 SNAP = 5            # ° target snap while dragging
 OFF_BELOW = 10      # ° dragging under this releases to "off"
@@ -71,7 +72,7 @@ class Panel(ScreenPanel):
                 head.pack_end(h["target_lbl"], False, False, 0)
 
             area = Gtk.DrawingArea(hexpand=True)
-            area.set_size_request(-1, 16 if h["readonly"] else 64)
+            area.set_size_request(-1, px(screen, 16 if h["readonly"] else 64))
             area.connect("draw", self.on_slider_draw, h)
             if not h["readonly"]:
                 area.add_events(Gdk.EventMask.BUTTON_PRESS_MASK
@@ -140,7 +141,7 @@ class Panel(ScreenPanel):
 
         self.rail = Gtk.ProgressBar(hexpand=True)
         self.rail.get_style_context().add_class("glance-rail")
-        self.rail.set_size_request(-1, 32)
+        self.rail.set_size_request(-1, px(screen, 32))
 
         self.root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.root.get_style_context().add_class("glance-root")
@@ -154,14 +155,14 @@ class Panel(ScreenPanel):
 
     # ---- slider geometry ----------------------------------------------------
 
-    @staticmethod
-    def _track(h, area):
+    def _track(self, h, area):
         # trough box inside the drawing area: 6px top pad, 34px tall, 24px
         # below for the scale labels. Read-only rows are a bare 10px strip.
         w = area.get_allocated_width()
+        s = self._screen
         if h["readonly"]:
-            return 2, 3, w - 4, 10
-        return 2, 6, w - 4, 34
+            return 2, px(s, 3), w - 4, px(s, 10)
+        return 2, px(s, 6), w - 4, px(s, 34)
 
     def _temp_to_x(self, h, area, t):
         x, _y, w, _hh = self._track(h, area)

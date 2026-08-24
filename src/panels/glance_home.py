@@ -12,6 +12,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import GLib, Gtk, Pango
 from ks_includes.screen_panel import ScreenPanel
+from panels.glance_metrics import px
 from ks_includes.KlippyGtk import find_widget
 
 PHASE_CLASSES = ["ph-heat", "ph-prep", "ph-print", "ph-done", "ph-err"]
@@ -125,7 +126,7 @@ class Panel(ScreenPanel):
 
         self.rail = Gtk.ProgressBar(hexpand=True)
         self.rail.get_style_context().add_class("glance-rail")
-        self.rail.set_size_request(-1, 32)
+        self.rail.set_size_request(-1, px(screen, 32))
 
         self.root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.root.get_style_context().add_class("glance-root")

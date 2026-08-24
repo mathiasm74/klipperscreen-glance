@@ -12,6 +12,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gdk, GLib, Gtk
 from ks_includes.screen_panel import ScreenPanel
+from panels.glance_metrics import px
 
 PRECISE_STEPS = (0.01, 0.1, 1, 10)
 SAFE_Z = 15.0
@@ -46,7 +47,7 @@ class Panel(ScreenPanel):
 
         # ---- left: bed map + readouts ----
         self.map = Gtk.DrawingArea()
-        self.map.set_size_request(422, 422)
+        self.map.set_size_request(px(screen, 422), px(screen, 422))
         self.map.add_events(Gdk.EventMask.BUTTON_PRESS_MASK
                             | Gdk.EventMask.BUTTON_RELEASE_MASK
                             | Gdk.EventMask.BUTTON1_MOTION_MASK)
@@ -95,7 +96,7 @@ class Panel(ScreenPanel):
         # ---- middle: the Z column ----
         zcol = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         zcol.get_style_context().add_class("glance-side")  # compact selector sizing
-        zcol.set_size_request(206, -1)
+        zcol.set_size_request(px(screen, 206), -1)
         zcol.set_hexpand(False)
 
         zhero = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
@@ -112,7 +113,7 @@ class Panel(ScreenPanel):
         # vertical height map: tap near a line to snap there, or press and
         # drag - Z follows the exact height under your finger on release
         self.zmap = Gtk.DrawingArea()
-        self.zmap.set_size_request(190, -1)
+        self.zmap.set_size_request(px(screen, 190), -1)
         self.zmap.add_events(Gdk.EventMask.BUTTON_PRESS_MASK
                              | Gdk.EventMask.BUTTON_RELEASE_MASK
                              | Gdk.EventMask.BUTTON1_MOTION_MASK)
@@ -124,13 +125,16 @@ class Panel(ScreenPanel):
 
         # ---- right: large verbs ----
         verbs = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        verbs.set_size_request(200, -1)
+        verbs.set_size_request(px(screen, 200), -1)
         verbs.set_hexpand(False)
         self.mesh_btn = None
+        has_qgl = self._printer.config_section_exists("quad_gantry_level")
         for label, cb in ((_("Home XYZ"), self.home), ("QGL", self.qgl),
                           (_("Bed mesh"), self.bed_mesh),
                           (_("Z-offset"), self.z_calibrate),
                           (_("Motors off"), self.motors_off)):
+            if label == "QGL" and not has_qgl:
+                continue
             b = Gtk.Button(label=label)
             b.get_style_context().add_class("glance-action")
             b.get_style_context().add_class("glance-verb")
@@ -163,7 +167,7 @@ class Panel(ScreenPanel):
 
         self.rail = Gtk.ProgressBar(hexpand=True)
         self.rail.get_style_context().add_class("glance-rail")
-        self.rail.set_size_request(-1, 32)
+        self.rail.set_size_request(-1, px(screen, 32))
 
         self.root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.root.get_style_context().add_class("glance-root")
@@ -226,7 +230,7 @@ class Panel(ScreenPanel):
             n.get_style_context().add_class("glance-temp-name")
             v = Gtk.Label(label="—")
             v.get_style_context().add_class("glance-temp-val")
-            v.set_size_request(170, -1)
+            v.set_size_request(px(self._screen, 170), -1)
             self.precise_vals[axis] = v
             minus = Gtk.Button(label="−")
             plus = Gtk.Button(label="+")
@@ -244,7 +248,7 @@ class Panel(ScreenPanel):
         steprow = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         slbl = Gtk.Label(label=_("Step · mm"), xalign=0)
         slbl.get_style_context().add_class("glance-temp-name")
-        slbl.set_size_request(140, -1)
+        slbl.set_size_request(px(self._screen, 140), -1)
         self.precise_sel = self._segmented(
             [f"{s:g}" for s in PRECISE_STEPS], self.set_precise_step, 2)
         steprow.pack_start(slbl, False, False, 0)
@@ -557,7 +561,11 @@ class Panel(ScreenPanel):
         self._screen._ws.klippy.gcode_script("G28")
 
     def qgl(self, widget):
-        self._screen._ws.klippy.gcode_script("G32")
+        # G32 (home+QGL+park) when the user's config provides it
+        if self._printer.config_section_exists("gcode_macro G32"):
+            self._screen._ws.klippy.gcode_script("G32")
+        else:
+            self._screen._ws.klippy.gcode_script("QUAD_GANTRY_LEVEL")
 
     def bed_mesh(self, widget):
         self._screen._ws.klippy.gcode_script("BED_MESH_CALIBRATE")

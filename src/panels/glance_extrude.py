@@ -13,6 +13,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gdk, GLib, Gtk
 from ks_includes.screen_panel import ScreenPanel
+from panels.glance_metrics import px
 
 SNAP = 5            # ° target snap while dragging
 SCALE_MIN = 100     # ° left end of the slider; releasing at the edge = off
@@ -67,7 +68,7 @@ class Panel(ScreenPanel):
         shead.pack_end(self.target_lbl, False, False, 0)
 
         self.slider = Gtk.DrawingArea(hexpand=True)
-        self.slider.set_size_request(-1, 64)
+        self.slider.set_size_request(-1, px(screen, 64))
         self.slider.add_events(Gdk.EventMask.BUTTON_PRESS_MASK
                                | Gdk.EventMask.BUTTON_RELEASE_MASK
                                | Gdk.EventMask.BUTTON1_MOTION_MASK)
@@ -97,7 +98,7 @@ class Panel(ScreenPanel):
         self.btn_extrude["btn"].connect("clicked", self.stroke, +1)
         verbs = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         # top of the cards sits level with the bottom of the EXTRUDER title
-        verbs.set_margin_top(32)
+        verbs.set_margin_top(px(screen, 32))
         verbs.pack_start(self.btn_retract["btn"], True, True, 0)
         verbs.pack_start(self.btn_extrude["btn"], True, True, 0)
         side.pack_start(verbs, False, False, 0)
@@ -126,6 +127,9 @@ class Panel(ScreenPanel):
             b.get_style_context().add_class("glance-ext-lu")
             b.connect("clicked", self.run_macro, macro)
             lu.pack_start(b, True, True, 0)
+        if not (self._printer.config_section_exists("gcode_macro UNLOAD_FILAMENT")
+                and self._printer.config_section_exists("gcode_macro LOAD_FILAMENT")):
+            lu.set_no_show_all(True)   # no macros on this printer: hide the pair
         side.pack_end(lu, False, False, 0)
 
         main = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, hexpand=True,
@@ -135,7 +139,7 @@ class Panel(ScreenPanel):
 
         self.rail = Gtk.ProgressBar(hexpand=True)
         self.rail.get_style_context().add_class("glance-rail")
-        self.rail.set_size_request(-1, 32)
+        self.rail.set_size_request(-1, px(screen, 32))
         # queued-stroke count rides on the rail's right end
         self.queue_lbl = Gtk.Label(label="", halign=Gtk.Align.START,
                                    valign=Gtk.Align.CENTER)
@@ -202,7 +206,7 @@ class Panel(ScreenPanel):
 
     def _track(self):
         w = self.slider.get_allocated_width()
-        return 2, 6, w - 4, 34
+        return 2, px(self._screen, 6), w - 4, px(self._screen, 34)
 
     def _temp_to_x(self, t):
         x, _y, w, _hh = self._track()

@@ -13,7 +13,7 @@ import sys
 
 SRC = pathlib.Path(__file__).resolve().parent
 REPO = SRC.parent.parent
-BUNDLE = REPO / "ds-bundle"
+BUNDLE = REPO / "design" / "ds-bundle"
 
 CARDS = {
     "Colors.html": "components/Foundations/Colors/Colors.html",
