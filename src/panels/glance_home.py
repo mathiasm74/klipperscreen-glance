@@ -40,6 +40,9 @@ class Panel(ScreenPanel):
 
         hero = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True, vexpand=True)
         hero.get_style_context().add_class("glance-hero")
+        phase = Gtk.Label(label=_("IDLE"), xalign=0)
+        phase.get_style_context().add_class("glance-phase")
+        hero.pack_start(phase, False, False, 0)
         hero.pack_start(self.big_lbl, True, True, 0)
         hero.pack_start(self.sub_lbl, False, False, 0)
         hero.pack_start(self.temps_lbl, False, False, 6)
