@@ -131,3 +131,9 @@ sizes through a shared scale (`min(w/1024, h/600)`) at runtime, and
 stylesheet for e.g. a 5" HDMI display. That's mechanical scaling of one
 source design — no forked copies — so expect it to be usable but worth a
 fine-tuning pass on real hardware.
+
+## License
+
+AGPL-3.0, matching KlipperScreen, whose panel framework this builds on.
+The bundled Anton and Space Grotesk fonts are under the SIL Open Font
+License (see `src/fonts/`).
