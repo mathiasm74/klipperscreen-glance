@@ -6,10 +6,8 @@ KlipperScreen is excellent as a complete touch control panel for Klipper.
 It gives you access to everything, and its panel framework makes projects
 like this possible with just a few drop-in files.
 
-But a printer screen is usually looked at, not operated. From across the
-room, the useful questions are simple: is it printing, how far along is
-it, is it still heating, or did something go wrong? Glance is built
-around answering those questions at a glance.
+But during active operation its progress is hard to judge from across
+the room, and the grid-based UI is at times clunky to operate.
 
 Each screen shows one large figure with a phase color — amber for
 heating, cyan for leveling, green for printing, violet for done, red for
