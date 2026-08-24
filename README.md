@@ -24,15 +24,15 @@ printer controls; Glance is for everything you want to know at a glance.
 
 | | |
 |---|---|
-| ![Home](screenshots/home.png) | ![Heating](screenshots/job-heating.png) |
+| <img alt="Home" src="screenshots/home.png" width="420"> | <img alt="Heating" src="screenshots/job-heating.png" width="420"> |
 | **Home** — idle screen: READY/WARM/HEATING hero, icon verb cards, scrollable print-again history | **Heating** — amber, ambient-referenced percent from the M117 heat bars |
-| ![Leveling](screenshots/job-leveling.png) | ![Meshing](screenshots/job-meshing.png) |
+| <img alt="Leveling" src="screenshots/job-leveling.png" width="420"> | <img alt="Meshing" src="screenshots/job-meshing.png" width="420"> |
 | **Leveling** — cyan, QGL driven by the heat-soak gate | **Meshing** — fresh bed mesh when the soak gate demands one |
-| ![Printing](screenshots/job-printing.png) | ![Paused](screenshots/job-paused.png) |
+| <img alt="Printing" src="screenshots/job-printing.png" width="420"> | <img alt="Paused" src="screenshots/job-paused.png" width="420"> |
 | **Printing** — green percent, time left + ETA, Speed and Z-offset steppers | **Paused** — filament controls swap in; resume/stop verbs |
-| ![Done](screenshots/job-done.png) | ![Move](screenshots/move.png) |
+| <img alt="Done" src="screenshots/job-done.png" width="420"> | <img alt="Move" src="screenshots/move.png" width="420"> |
 | **Done** — violet phase, temps cooling, Save Z | **Move** — tap-to-go bed map, Z height map, one-tap verbs |
-| ![Preheat](screenshots/preheat.png) | ![Extrude](screenshots/extrude.png) |
+| <img alt="Preheat" src="screenshots/preheat.png" width="420"> | <img alt="Extrude" src="screenshots/extrude.png" width="420"> |
 | **Preheat** — draggable heater sliders, Mainsail-style power graph, material profiles | **Extrude** — queueable strokes with rail count badge, cold-gated verbs |
 
 ## How to install
