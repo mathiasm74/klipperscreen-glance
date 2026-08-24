@@ -31,6 +31,8 @@ printer controls; Glance is for everything you want to know at a glance.
 
 A print walks the job screen through its phases:
 
+![Print phases](screenshots/print-phases.gif)
+
 | | |
 |---|---|
 | ![Heating](screenshots/job-heating.png) | ![Leveling](screenshots/job-leveling.png) |
