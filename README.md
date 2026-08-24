@@ -51,11 +51,49 @@ cd ~ && git clone https://github.com/mathiasm74/klipperscreen-glance.git
 cd klipperscreen-glance && ./install.sh
 ```
 
-The installer copies panels/theme/fonts, applies the patch (and tells you
-if upstream KlipperScreen has drifted), stages `glance.cfg` next to your
-printer config, and prints the two manual steps: `[include glance.cfg]`
-in printer.cfg and `theme: glance` + `auto_open_extrude: False` in
-KlipperScreen.conf (plus optional `[preheat NAME]` profiles). 
+The installer copies the panels, theme, and fonts, applies the small
+KlipperScreen patch (and tells you if your KlipperScreen version has
+drifted), and places `glance.cfg` next to your printer config. Two
+manual edits finish the job:
+
+**1. printer.cfg** — include the Glance macros:
+
+```
+[include glance.cfg]
+```
+
+That brings in `_HEAT_WAIT` (heating that narrates its progress),
+filament load/unload helpers, and heat-soak bookkeeping. Then let your
+`PRINT_START` tell the screen what it's doing: heat with `_HEAT_WAIT`
+instead of `M190`/`M109`, and label the setup steps with `M117`:
+
+```
+_HEAT_WAIT HEATER=heater_bed TARGET={BED_TEMP}
+_HEAT_WAIT HEATER=extruder TARGET={EXTRUDER_TEMP}
+M117 Leveling gantry
+QUAD_GANTRY_LEVEL          ; or your G32 macro
+M117 Scanning bed mesh
+BED_MESH_CALIBRATE
+M117                       ; clear -> the green PRINTING phase
+```
+
+(There's a complete `PRINT_START` example at the bottom of `glance.cfg`.)
+The standard `M190`/`M109` commands block the printer from updating any
+display while they wait — `_HEAT_WAIT` is what makes the amber heating
+percent possible at all.
+
+**2. KlipperScreen.conf** — select the theme, and optionally define the
+material profiles the Preheat screen offers:
+
+```
+[main]
+theme: glance
+auto_open_extrude: False
+
+[preheat PLA]
+extruder: 215
+bed: 60
+```
 
 For updates through Moonraker's Update Manager:
 
