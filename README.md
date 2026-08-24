@@ -6,7 +6,7 @@ KlipperScreen is excellent as a complete touch control panel for Klipper.
 It gives you access to everything, and its panel framework makes projects
 like this possible with just a few drop-in files.
 
-But during active operation state, and progress is hard to judge from across
+But during active operation, state and progress is hard to judge from across
 the room, and the grid-based UI is at times clunky to operate. This project
 tries to address this by replacing a few key screens, while most everything 
 else stays available through the standard KlipperScreen panels.
