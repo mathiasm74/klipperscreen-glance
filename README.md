@@ -22,25 +22,18 @@ printer controls; Glance is for everything you want to know at a glance.
 
 ## Screens
 
-![Tour](screenshots/tour.gif)
-
 | | |
 |---|---|
-| ![Home](screenshots/home.png) | ![Move](screenshots/move.png) |
-| **Home** — READY/WARM/HEATING hero, icon verb cards, scrollable print-again history | **Move** — tap-to-go bed map, Z height map, one-tap verbs |
+| ![Home](screenshots/home.png) | ![Heating](screenshots/job-heating.png) |
+| **Home** — idle screen: READY/WARM/HEATING hero, icon verb cards, scrollable print-again history | **Heating** — amber, ambient-referenced percent from the M117 heat bars |
+| ![Leveling](screenshots/job-leveling.png) | ![Meshing](screenshots/job-meshing.png) |
+| **Leveling** — cyan, QGL driven by the heat-soak gate | **Meshing** — fresh bed mesh when the soak gate demands one |
+| ![Printing](screenshots/job-printing.png) | ![Paused](screenshots/job-paused.png) |
+| **Printing** — green percent, time left + ETA, Speed and Z-offset steppers | **Paused** — filament controls swap in; resume/stop verbs |
+| ![Done](screenshots/job-done.png) | ![Move](screenshots/move.png) |
+| **Done** — violet phase, temps cooling, Save Z | **Move** — tap-to-go bed map, Z height map, one-tap verbs |
 | ![Preheat](screenshots/preheat.png) | ![Extrude](screenshots/extrude.png) |
 | **Preheat** — draggable heater sliders, Mainsail-style power graph, material profiles | **Extrude** — queueable strokes with rail count badge, cold-gated verbs |
-
-A print walks the job screen through its phases:
-
-| | |
-|---|---|
-| ![Heating](screenshots/job-heating.png) | ![Leveling](screenshots/job-leveling.png) |
-| **Heating** — amber, ambient-referenced percent from the M117 heat bars | **Leveling** — cyan, QGL driven by the heat-soak gate |
-| ![Meshing](screenshots/job-meshing.png) | ![Printing](screenshots/job-printing.png) |
-| **Meshing** — fresh bed mesh when the soak gate demands one | **Printing** — green percent, time left + ETA, Speed and Z-offset steppers |
-| ![Job paused](screenshots/job-paused.png) | ![Job done](screenshots/job-done.png) |
-| **Paused** — filament controls swap in; resume/stop verbs | **Done** — violet phase, temps cooling, Save Z |
 
 ## How to install
 
