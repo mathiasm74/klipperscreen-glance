@@ -22,6 +22,8 @@ printer controls; Glance is for everything you want to know at a glance.
 
 ## Screens
 
+![Control screens](screenshots/control-screens.gif)
+
 | | |
 |---|---|
 | ![Home](screenshots/home.png) | ![Move](screenshots/move.png) |
