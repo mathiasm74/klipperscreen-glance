@@ -28,40 +28,40 @@ printer controls; Glance is for everything you want to know at a glance.
 <td width="50%"><img alt="Heating" src="screenshots/job-heating.png"></td>
 </tr>
 <tr>
-<td width="50%"><b>Home</b> — idle screen: READY/WARM/HEATING hero, icon verb cards, scrollable print-again history</td>
-<td width="50%"><b>Heating</b> — amber, ambient-referenced percent from the M117 heat bars</td>
+<td width="50%"><b>Home</b> — the idle screen: printer state at a glance, one tap to reprint a recent job</td>
+<td width="50%"><b>Heating</b> — amber while the heaters climb, with live progress</td>
 </tr>
 <tr>
 <td width="50%"><img alt="Leveling" src="screenshots/job-leveling.png"></td>
 <td width="50%"><img alt="Meshing" src="screenshots/job-meshing.png"></td>
 </tr>
 <tr>
-<td width="50%"><b>Leveling</b> — cyan, QGL driven by the heat-soak gate</td>
-<td width="50%"><b>Meshing</b> — fresh bed mesh when the soak gate demands one</td>
+<td width="50%"><b>Leveling</b> — cyan while the gantry levels</td>
+<td width="50%"><b>Meshing</b> — cyan while the bed is scanned</td>
 </tr>
 <tr>
 <td width="50%"><img alt="Printing" src="screenshots/job-printing.png"></td>
 <td width="50%"><img alt="Paused" src="screenshots/job-paused.png"></td>
 </tr>
 <tr>
-<td width="50%"><b>Printing</b> — green percent, time left + ETA, Speed and Z-offset steppers</td>
-<td width="50%"><b>Paused</b> — filament controls swap in; resume/stop verbs</td>
+<td width="50%"><b>Printing</b> — green progress with time left, plus speed and Z-offset tweaks mid-print</td>
+<td width="50%"><b>Paused</b> — pausing brings up filament controls</td>
 </tr>
 <tr>
 <td width="50%"><img alt="Done" src="screenshots/job-done.png"></td>
 <td width="50%"><img alt="Move" src="screenshots/move.png"></td>
 </tr>
 <tr>
-<td width="50%"><b>Done</b> — violet phase, temps cooling, Save Z</td>
-<td width="50%"><b>Move</b> — tap-to-go bed map, Z height map, one-tap verbs</td>
+<td width="50%"><b>Done</b> — violet when the print is finished</td>
+<td width="50%"><b>Move</b> — tap or drag on the maps to move the toolhead</td>
 </tr>
 <tr>
 <td width="50%"><img alt="Preheat" src="screenshots/preheat.png"></td>
 <td width="50%"><img alt="Extrude" src="screenshots/extrude.png"></td>
 </tr>
 <tr>
-<td width="50%"><b>Preheat</b> — draggable heater sliders, Mainsail-style power graph, material profiles</td>
-<td width="50%"><b>Extrude</b> — queueable strokes with rail count badge, cold-gated verbs</td>
+<td width="50%"><b>Preheat</b> — drag a slider or pick a material profile; the graph shows the last six minutes</td>
+<td width="50%"><b>Extrude</b> — feed or pull filament; repeated taps queue up, and nothing moves while the nozzle is cold</td>
 </tr>
 </table>
 
