@@ -40,27 +40,6 @@ A print walks the job screen through its phases:
 | ![Job paused](screenshots/job-paused.png) | ![Job done](screenshots/job-done.png) |
 | **Paused** — filament controls swap in; resume/stop verbs | **Done** — violet phase, temps cooling, Save Z |
 
-## Panels
-
-- `glance_home` — idle screen; replaces the main menu
-- `glance_status` — job screen; heating/leveling/printing/paused/done phases
-- `glance_move` — bed + Z maps with drag targets, precise-move sheet, Z-offset calibration
-- `glance_preheat` — heater sliders (nozzle 100–270, left edge = off), 6-min temp+power graph, `[preheat]` profiles, keep-warm Hold
-- `glance_extrude` — filament strokes with Klipper-queue-backed repeat taps, Unload/Load macros
-
-## Repo layout
-
-- `src/` — everything that lands on the Pi: the five panels, the theme
-  stylesheet, the fonts (OFL-licensed Anton + Space Grotesk), and the one
-  2-line `screen.py.patch` that reroutes KlipperScreen's ready/printing
-  states to the glance panels (KlipperScreen has no config hook for that)
-- `klipper/` — the printer-side contract: `glance.cfg` with the
-  `_HEAT_WAIT` heat-narrating macro, filament helpers, soak bookkeeping,
-  and the documented M117 phase protocol the job screen parses
-- `design/` — the design system: `ds-bundle/` cards + tokens synced to a
-  claude.ai/design project, and their sources
-- `install.sh`, `tools/` — installer and the stylesheet scaler
-
 ## Install (on the printer Pi, KlipperScreen v0.4.x)
 
 ```
@@ -84,16 +63,22 @@ managed_services: KlipperScreen
 install_script: install.sh
 ```
 
-## What degrades gracefully
+## Will it work on my printer?
 
-The panels check the printer's own config at load: no
-`UNLOAD_FILAMENT`/`LOAD_FILAMENT` macros → the filament buttons hide; no
-`quad_gantry_level` → the Move screen drops its QGL verb (and QGL falls
-back to `QUAD_GANTRY_LEVEL` when there's no `G32` macro); no probe → no
-Save Z. Without `glance.cfg`'s `_HEAT_WAIT` in your PRINT_START the job
-screen still works from print_stats, but loses the amber heating percent
-and the leveling/meshing phases — blocking M109/M190 waits freeze all
-screen updates, which is half the reason `_HEAT_WAIT` exists.
+Glance adapts to what your printer actually has. Buttons for features
+your machine doesn't support simply don't appear: no filament
+load/unload macros, no filament buttons; no quad gantry leveling, no QGL
+button; no probe, no Save Z. There's nothing to configure — the screens
+look at your printer's setup and show what applies.
+
+One thing is worth adopting for the full experience: `glance.cfg` (the
+installer puts it next to your printer config, ready to include). It
+teaches your print-start routine to narrate what it's doing, which is
+what gives the job screen its live heating percent and the leveling and
+meshing phases. Without it everything still works and prints still track
+progress — you just miss the play-by-play during warm-up, because
+standard heat-and-wait commands block the printer from updating any
+screen until they finish.
 
 ## Other screen sizes
 
