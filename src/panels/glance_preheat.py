@@ -56,9 +56,15 @@ class Panel(ScreenPanel):
         # ---- left: slider rows + history graph ----
         left = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10,
                        hexpand=True, vexpand=True)
+        phase = Gtk.Label(label=_("PREHEAT"), xalign=0)
+        phase.get_style_context().add_class("glance-phase")
+        left.pack_start(phase, False, False, 0)
         for h in self.heaters:
             head = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=14)
-            nm = Gtk.Label(label=h["name"], xalign=0, hexpand=True)
+            # the tall Anton live label sets the row height; keep the heater
+            # name on the same baseline so it hugs its slider
+            nm = Gtk.Label(label=h["name"], xalign=0, hexpand=True,
+                           valign=Gtk.Align.END)
             nm.get_style_context().add_class("glance-temp-name")
             h["target_lbl"] = Gtk.Label(label=_("off"), valign=Gtk.Align.END)
             h["target_lbl"].get_style_context().add_class("glance-target-off")
