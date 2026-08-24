@@ -55,8 +55,9 @@ The installer copies panels/theme/fonts, applies the patch (and tells you
 if upstream KlipperScreen has drifted), stages `glance.cfg` next to your
 printer config, and prints the two manual steps: `[include glance.cfg]`
 in printer.cfg and `theme: glance` + `auto_open_extrude: False` in
-KlipperScreen.conf (plus optional `[preheat NAME]` profiles). For updates
-through Moonraker's Update Manager:
+KlipperScreen.conf (plus optional `[preheat NAME]` profiles). 
+
+For updates through Moonraker's Update Manager:
 
 ```
 [update_manager glance]
