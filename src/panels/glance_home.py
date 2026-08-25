@@ -188,7 +188,7 @@ class Panel(ScreenPanel):
         self.temps_lbl.set_label(
             _("Nozzle") + f" {nt:.0f}°" + (f" / {ntg:.0f}°" if ntg else "") +
             "   ·   " + _("Bed") + f" {bt:.0f}°" + (f" / {btg:.0f}°" if btg else "") + 
-            f"  ·  " + _("Chamber") + f" {ct:.0f}°" if ct else "")
+            "   ·   " + _("Chamber") + f" {ct:.0f}°" if ct else "")
         if ntg or btg:
             heating = (ntg and nt < ntg - 2) or (btg and bt < btg - 2)
             if heating:
