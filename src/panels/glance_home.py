@@ -182,11 +182,13 @@ class Panel(ScreenPanel):
         ntg = self._printer.get_stat("extruder", "target") or 0
         bt = self._printer.get_stat("heater_bed", "temperature")
         btg = self._printer.get_stat("heater_bed", "target") or 0
+        ct = self._printer.get_stat("temperature_sensor chamber", "temperature")
         if nt is None or isinstance(nt, dict):
             return
         self.temps_lbl.set_label(
             _("Nozzle") + f" {nt:.0f}°" + (f" / {ntg:.0f}°" if ntg else "") +
-            "   ·   " + _("Bed") + f" {bt:.0f}°" + (f" / {btg:.0f}°" if btg else ""))
+            "   ·   " + _("Bed") + f" {bt:.0f}°" + (f" / {btg:.0f}°" if btg else "") + 
+            "   ·   " + _("Chamber") + f" {ct:.0f}°" if ct else "")
         if ntg or btg:
             heating = (ntg and nt < ntg - 2) or (btg and bt < btg - 2)
             if heating:
