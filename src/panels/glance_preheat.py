@@ -58,10 +58,12 @@ class Panel(ScreenPanel):
         # ---- left: slider rows + history graph ----
         left = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10,
                        hexpand=True, vexpand=True)
-        phase = Gtk.Label(label=_("PREHEAT"), xalign=0)
+        # the phase word shares the first heading row: it sits top-left in
+        # the height the tall live digits claim anyway
+        phase = Gtk.Label(label=_("PREHEAT"), xalign=0,
+                          halign=Gtk.Align.START, valign=Gtk.Align.START)
         phase.get_style_context().add_class("glance-phase")
-        left.pack_start(phase, False, False, 0)
-        for h in self.heaters:
+        for i, h in enumerate(self.heaters):
             head = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=14)
             # the tall Anton live label sets the row height; keep the heater
             # name on the same baseline so it hugs its slider
@@ -91,8 +93,18 @@ class Panel(ScreenPanel):
                 area.connect("button-release-event", self.on_slider_release, h)
             h["area"] = area
 
-            left.pack_start(head, False, False, 0)
-            left.pack_start(area, False, False, 0)
+            # heading hugs its slider; the column spacing separates heaters
+            group = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+            if i == 0:
+                top = Gtk.Overlay()
+                top.add(head)
+                top.add_overlay(phase)
+                top.set_overlay_pass_through(phase, True)
+                group.pack_start(top, False, False, 0)
+            else:
+                group.pack_start(head, False, False, 0)
+            group.pack_start(area, False, False, 0)
+            left.pack_start(group, False, False, 0)
 
         self.graph = Gtk.DrawingArea(hexpand=True, vexpand=True)
         self.graph.connect("draw", self.on_graph_draw)
