@@ -20,6 +20,7 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import GLib, Gtk, Pango
 from ks_includes.screen_panel import ScreenPanel
 from panels.glance_metrics import px
+from panels.glance_zoffset import fmt_delta, query_base
 from ks_includes.KlippyGtk import find_widget
 
 # matches the M117 lines from _HEAT_WAIT: "██░░ 23% Bed 45/110" or "... 100% Bed 110"
@@ -46,6 +47,7 @@ class Panel(ScreenPanel):
         self._busy_buttons = set()
         self.sheet_labels = {}
         self.pending_zoff = None
+        self.zoff_base = 0.0  # total at which the edited change reads 0
         self.thumb_dialog = None
         self.thumb_loaded = False
 
@@ -85,13 +87,21 @@ class Panel(ScreenPanel):
         self.bed_row, self.bed_val = self._temp_row(_("Bed"))
         self.speed_row, self.speed_val = self._factor_row(_("Speed"), self.adjust_speed)
         self.flow_row, self.flow_val = self._factor_row(_("Flow"), self.adjust_flow)
-        # z-offset row: arrows bracket the hundredths digit (the 0.01 step),
-        # and the buttons are the matching up/down arrows
+        # z-offset row: the digits are the unsaved change (0 = matches the
+        # saved offset), the small line under the name is the resulting total
+        # (what Mainsail shows). Arrows bracket the hundredths digit (the
+        # 0.01 step), and the buttons are the matching up/down arrows
         self.zoff_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
         self.zoff_row.get_style_context().add_class("glance-temp-row")
         self.zoff_row.get_style_context().add_class("glance-zoff-row")
-        zname = Gtk.Label(label=_("Z-offset"), xalign=0, hexpand=True)
-        zname.get_style_context().add_class("glance-temp-name")
+        zname = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True,
+                        valign=Gtk.Align.CENTER)
+        zname_lbl = Gtk.Label(label=_("Z-offset"), xalign=0)
+        zname_lbl.get_style_context().add_class("glance-temp-name")
+        self.zoff_total = Gtk.Label(label="", xalign=0)
+        self.zoff_total.get_style_context().add_class("glance-fname")
+        zname.pack_start(zname_lbl, False, False, 0)
+        zname.pack_start(self.zoff_total, False, False, 0)
         self.zoff_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.zoff_box.set_valign(Gtk.Align.CENTER)
         self.zoff_prefix = Gtk.Label(label="+0.")
@@ -444,8 +454,11 @@ class Panel(ScreenPanel):
                         self.pending_zoff = None
                         self.zoff_box.get_style_context().remove_class("glance-busy")
                         self._show_zoff(live)
+                        self._query_zoff_base()
                 else:
+                    # a home, a save or a change from Mainsail can move the base
                     self._show_zoff(live)
+                    self._query_zoff_base()
         if "display_status" in data and "message" in data["display_status"]:
             self.msg = data["display_status"]["message"] or ""
         if "print_stats" in data:
@@ -754,8 +767,10 @@ class Panel(ScreenPanel):
         return backdrop
 
     def save_zoffset(self, widget):
-        # persists the eddy runtime offset to variables.cfg (no restart)
-        self._screen._ws.klippy.gcode_script("Z_OFFSET_APPLY_PROBE")
+        # persists the eddy runtime offset to variables.cfg (no restart);
+        # re-read the base once it has run so the delta drops to 0
+        self._screen._ws.klippy.gcode_script(
+            "Z_OFFSET_APPLY_PROBE", lambda *a: self._query_zoff_base())
         widget.set_sensitive(False)  # saved - disarm until the next print
 
     def open_details(self, widget):
@@ -771,10 +786,24 @@ class Panel(ScreenPanel):
         self._screen._go_to_submenu(widget, "")
 
     def _show_zoff(self, value):
-        s = f"{value:+.3f}"
+        # value is the total offset; the digits show its distance from the base
+        s = fmt_delta(value - self.zoff_base)
         self.zoff_prefix.set_label(s[:-3])
         for i, d in enumerate(self.zoff_digits):
             d.set_label(s[-3 + i])
+        self.zoff_total.set_label(_("total") + f" {value:.3f}")
+
+    def _query_zoff_base(self):
+        query_base(self._screen, self._printer, self._on_zoff_base)
+
+    def _on_zoff_base(self, base):
+        self.zoff_base = base
+        if self.pending_zoff is not None:
+            self._show_zoff(self.pending_zoff)
+        else:
+            offset = self._printer.get_stat("gcode_move", "homing_origin")
+            if offset and not isinstance(offset, dict):
+                self._show_zoff(float(offset[2]))
 
     def adjust_zoffset_row(self, widget, direction):
         # optimistic: during PRINT_START's heating waits the gcode queue is
@@ -842,3 +871,4 @@ class Panel(ScreenPanel):
         # when a reload is genuinely needed.
         if self.phase == "prep" and self.pulse_timeout is None:
             self.pulse_timeout = GLib.timeout_add(180, self._pulse)
+        self._query_zoff_base()

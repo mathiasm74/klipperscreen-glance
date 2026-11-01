@@ -13,6 +13,7 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gdk, GLib, Gtk
 from ks_includes.screen_panel import ScreenPanel
 from panels.glance_metrics import px
+from panels.glance_zoffset import fmt_delta, query_base
 
 PRECISE_STEPS = (0.01, 0.1, 1, 10)
 SAFE_Z = 15.0
@@ -185,6 +186,11 @@ class Panel(ScreenPanel):
         self.overlay.add(inner)
         self.backdrop = self._build_precise()
         self.overlay.add_overlay(self.backdrop)
+        self.zcal_started = False
+        self.zcal_cmd = 0.0
+        self.zcal_dig = 0.0
+        self.zcal_base = None
+        self.zcal_origin = None
         self.zcal_backdrop = self._build_zcal()
         self.overlay.add_overlay(self.zcal_backdrop)
         self.content.pack_start(self.overlay, True, True, 0)
@@ -599,10 +605,18 @@ class Panel(ScreenPanel):
         info.get_style_context().add_class("glance-temp-name")
         box.pack_start(info, False, False, 0)
 
+        # the value is the change Save will make to the saved z-offset; the
+        # line under the name is the resulting total (what Mainsail shows)
         vrow = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         vrow.get_style_context().add_class("glance-temp-row")
-        vname = Gtk.Label(label=_("Nozzle height"), xalign=0, hexpand=True)
-        vname.get_style_context().add_class("glance-temp-name")
+        vname = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True,
+                        valign=Gtk.Align.CENTER)
+        vname_lbl = Gtk.Label(label=_("Z-offset change"), xalign=0)
+        vname_lbl.get_style_context().add_class("glance-temp-name")
+        self.zcal_total = Gtk.Label(label="", xalign=0)
+        self.zcal_total.get_style_context().add_class("glance-fname")
+        vname.pack_start(vname_lbl, False, False, 0)
+        vname.pack_start(self.zcal_total, False, False, 0)
         self.zcal_val = Gtk.Label(label="—")
         self.zcal_val.get_style_context().add_class("glance-temp-val")
         self.zcal_down = Gtk.Button(label="↓")
@@ -644,7 +658,11 @@ class Panel(ScreenPanel):
         self.zcal_start.set_sensitive(True)
         for b in (self.zcal_down, self.zcal_up, self.zcal_save):
             b.set_sensitive(False)
-        self.zcal_start_offset = None
+        self.zcal_started = False
+        self.zcal_base = None
+        self.zcal_origin = None
+        self.zcal_val.set_label("—")
+        self.zcal_total.set_label("")
         self.zcal_backdrop.show()
 
     def zcal_begin(self, widget):
@@ -654,9 +672,13 @@ class Panel(ScreenPanel):
         script += (f"G90\nG0 X{self.bed_x / 2:.1f} Y{self.bed_y / 2:.1f} F9000\n"
                    f"G0 Z0.1 F{Z_SPEED * 60}")
         self._screen._ws.klippy.gcode_script(script)
-        offset = self._printer.get_stat("gcode_move", "homing_origin")
-        self.zcal_start_offset = (float(offset[2])
-                                  if offset and not isinstance(offset, dict) else 0.0)
+        # the calibration's own bookkeeping, updated as each tap is sent.
+        # Reading it back from the printer is wrong twice over: live_position
+        # lags rapid taps, and it includes the bed mesh's Z correction (about
+        # +0.05 at bed center), which Save would fold into the offset
+        self.zcal_cmd = 0.1   # commanded Z
+        self.zcal_dig = 0.0   # offset change since Start
+        self.zcal_started = True
         widget.set_sensitive(False)
         for b in (self.zcal_down, self.zcal_up, self.zcal_save):
             b.set_sensitive(True)
@@ -664,41 +686,65 @@ class Panel(ScreenPanel):
     def _zcal_state(self):
         offset = self._printer.get_stat("gcode_move", "homing_origin")
         o = float(offset[2]) if offset and not isinstance(offset, dict) else 0.0
-        return self.pos[2], o  # commanded Z, current offset
+        return self.zcal_cmd, o  # commanded Z, current offset
 
     def zcal_adjust(self, widget, sign):
         # the starting 0.10 is deliberate air gap, not offset error: taps are
         # pure motion above commanded Z0; only once the nozzle is AT the
         # current believed zero does further descent dig into the offset.
         # Rising un-digs the offset first, symmetrically.
-        cmd_z, offset = self._zcal_state()
         if sign < 0:
-            if cmd_z > 0.0005:
+            if self.zcal_cmd > 0.0005:
+                self.zcal_cmd = round(self.zcal_cmd - 0.01, 3)
                 self._screen._ws.klippy.gcode_script(
                     f"G91\nG0 Z-0.01 F{Z_SPEED * 60}\nG90")
             else:
+                self.zcal_dig = round(self.zcal_dig - 0.01, 3)
                 self._screen._ws.klippy.gcode_script(
                     "SET_GCODE_OFFSET Z_ADJUST=-0.010 MOVE=1")
         else:
-            if (self.zcal_start_offset is not None
-                    and offset < self.zcal_start_offset - 0.0005):
+            if self.zcal_dig < -0.0005:
+                self.zcal_dig = round(self.zcal_dig + 0.01, 3)
                 self._screen._ws.klippy.gcode_script(
                     "SET_GCODE_OFFSET Z_ADJUST=+0.010 MOVE=1")
             else:
+                self.zcal_cmd = round(self.zcal_cmd + 0.01, 3)
                 self._screen._ws.klippy.gcode_script(
                     f"G91\nG0 Z0.01 F{Z_SPEED * 60}\nG90")
+        self._zcal_show()
 
     def zcal_do_save(self, widget):
         # drag found at commanded Z_c means the true zero is Z_c above the
         # believed zero: fold any motion-phase remainder into the offset,
         # then persist
-        cmd_z, _o = self._zcal_state()
         script = ""
-        if abs(cmd_z) > 0.0005:
-            script += f"SET_GCODE_OFFSET Z_ADJUST={cmd_z:+.3f} MOVE=1\n"
+        if abs(self.zcal_cmd) > 0.0005:
+            script += f"SET_GCODE_OFFSET Z_ADJUST={self.zcal_cmd:+.3f} MOVE=1\n"
         script += "Z_OFFSET_APPLY_PROBE"
-        self._screen._ws.klippy.gcode_script(script)
+        # re-read the saved value once it has run so the change drops to 0
+        self._screen._ws.klippy.gcode_script(script, lambda *a: self._zcal_query_base())
+        self.zcal_cmd, self.zcal_dig = 0.0, 0.0
+        for b in (self.zcal_down, self.zcal_up):
+            b.set_sensitive(False)
         widget.set_sensitive(False)
+
+    def _zcal_query_base(self):
+        query_base(self._screen, self._printer, self._zcal_on_base)
+
+    def _zcal_on_base(self, base):
+        self.zcal_base = base
+        self._zcal_show()
+
+    def _zcal_show(self):
+        # Save folds the commanded Z into the offset, so the total it leaves
+        # is the current offset plus the commanded Z; before Start the nozzle
+        # isn't at the paper yet, so there's nothing meaningful to show
+        if not self.zcal_started or self.zcal_base is None:
+            return
+        cmd_z, offset = self._zcal_state()
+        total = offset + cmd_z
+        self.zcal_val.set_label(fmt_delta(total - self.zcal_base))
+        self.zcal_total.set_label(_("total") + f" {total:.3f}")
 
     def close_zcal(self, widget=None, event=None):
         if self.zcal_backdrop.get_visible() and not self.zcal_start.get_sensitive():
@@ -754,10 +800,11 @@ class Panel(ScreenPanel):
             if self.z_target is not None and abs(self.pos[2] - self.z_target) < 0.3:
                 self.z_target = None
             if self.zcal_backdrop.get_visible():
-                # machine-space nozzle height (offset + commanded Z): the number
-                # a paper test intuitively counts down
-                lp = self._printer.get_stat("motion_report", "live_position")
-                if lp and not isinstance(lp, dict):
-                    self.zcal_val.set_label(f"{float(lp[2]):.3f}")
+                # a home (new probe reading) or a save moves the base
+                if origin and not isinstance(origin, dict) and \
+                        float(origin[2]) != self.zcal_origin:
+                    self.zcal_origin = float(origin[2])
+                    self._zcal_query_base()
+                self._zcal_show()
             self.map.queue_draw()
             self.zmap.queue_draw()
