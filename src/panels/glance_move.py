@@ -89,9 +89,15 @@ class Panel(ScreenPanel):
         pos_row.pack_start(vtap, True, True, 0)
         self.axis_vals["V"] = vval
         map_wrap.pack_start(pos_row, False, False, 0)
+        note_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         note = Gtk.Label(label=_("taps travel at") + f" Z ≥ {SAFE_Z:.0f}", xalign=0)
         note.get_style_context().add_class("glance-fname")
-        map_wrap.pack_start(note, False, False, 0)
+        note_row.pack_start(note, False, False, 0)
+        # same number Mainsail shows: the full gcode Z offset (homing_origin)
+        self.zoff_lbl = Gtk.Label(label="", xalign=1, hexpand=True)
+        self.zoff_lbl.get_style_context().add_class("glance-fname")
+        note_row.pack_end(self.zoff_lbl, True, True, 0)
+        map_wrap.pack_start(note_row, False, False, 0)
 
         # ---- middle: the Z column ----
         zcol = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
@@ -726,6 +732,8 @@ class Panel(ScreenPanel):
         # subtract the gcode offset so numbers stay in commanded coordinates
         pos = self._printer.get_stat("motion_report", "live_position")
         origin = self._printer.get_stat("gcode_move", "homing_origin")
+        if origin and not isinstance(origin, dict):
+            self.zoff_lbl.set_label(_("Z-offset") + f" {float(origin[2]):.3f}")
         if pos and not isinstance(pos, dict) and origin and not isinstance(origin, dict):
             pos = [float(pos[i]) - float(origin[i]) for i in range(3)]
         else:
