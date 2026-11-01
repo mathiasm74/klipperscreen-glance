@@ -404,3 +404,11 @@ button.active label {
     font-weight: 700;
     color: #0b0d10;
 }
+/* status text on a rail (Move panel QGL progress): light with a shadow so
+   it reads over both the filled and the tinted empty part */
+.glance-rail-text {
+    font-size: 18px;
+    font-weight: 700;
+    color: #f2f4f7;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}

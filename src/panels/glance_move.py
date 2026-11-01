@@ -5,6 +5,7 @@
 # modal offers exact per-axis nudging at fine steps.
 
 import logging
+import re
 import time
 
 import gi
@@ -23,6 +24,8 @@ XY_SPEEDS = (50, 150, 300)
 Z_LINES = (0, 10, 50, 75, 100)
 Z_MAP_MAX = 110.0
 Z_PAD = 14  # px margin above/below the height-map scale
+QGL_PROBE_RE = re.compile(r"probe:? at ([-\d.]+),([-\d.]+)")
+QGL_RETRY_RE = re.compile(r"Retries: (\d+)/(\d+) Probed points range: ([\d.]+) tolerance: ([\d.]+)")
 
 
 class Panel(ScreenPanel):
@@ -135,8 +138,13 @@ class Panel(ScreenPanel):
         verbs.set_size_request(px(screen, 200), -1)
         verbs.set_hexpand(False)
         self.mesh_btn = None
+        self.qgl_btn = None
+        self.qgl = None  # progress state while a QGL from this panel runs
+        self.qgl_clear_src = None
+        self.qgl_pulse_src = None
+        self.qgl_points = self._qgl_points()
         has_qgl = self._printer.config_section_exists("quad_gantry_level")
-        for label, cb in ((_("Home XYZ"), self.home), ("QGL", self.qgl),
+        for label, cb in ((_("Home XYZ"), self.home), ("QGL", self.start_qgl),
                           (_("Bed mesh"), self.bed_mesh),
                           (_("Z-offset"), self.z_calibrate),
                           (_("Motors off"), self.motors_off)):
@@ -148,6 +156,8 @@ class Panel(ScreenPanel):
             b.set_hexpand(False)
             b.connect("clicked", cb)
             verbs.pack_start(b, False, False, 0)
+            if cb == self.start_qgl:
+                self.qgl_btn = b
             if cb == self.bed_mesh:
                 self.mesh_btn = b
                 b.set_sensitive(False)  # meshing needs a homed printer
@@ -175,13 +185,22 @@ class Panel(ScreenPanel):
         self.rail = Gtk.ProgressBar(hexpand=True)
         self.rail.get_style_context().add_class("glance-rail")
         self.rail.set_size_request(-1, px(screen, 32))
+        # QGL progress text rides on the rail
+        self.rail_lbl = Gtk.Label(label="", halign=Gtk.Align.START,
+                                  valign=Gtk.Align.CENTER)
+        self.rail_lbl.set_margin_start(12)
+        self.rail_lbl.get_style_context().add_class("glance-rail-text")
+        rail_overlay = Gtk.Overlay()
+        rail_overlay.add(self.rail)
+        rail_overlay.add_overlay(self.rail_lbl)
+        rail_overlay.set_overlay_pass_through(self.rail_lbl, True)
 
         self.root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.root.get_style_context().add_class("glance-root")
         self.root.pack_start(main, True, True, 0)
         inner = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         inner.pack_start(self.root, True, True, 0)
-        inner.pack_end(self.rail, False, False, 0)
+        inner.pack_end(rail_overlay, False, False, 0)
         self.overlay = Gtk.Overlay()
         self.overlay.add(inner)
         self.backdrop = self._build_precise()
@@ -572,12 +591,118 @@ class Panel(ScreenPanel):
     def home(self, widget):
         self._screen._ws.klippy.gcode_script("G28")
 
-    def qgl(self, widget):
+    def start_qgl(self, widget):
         # G32 (home+QGL+park) when the user's config provides it
-        if self._printer.config_section_exists("gcode_macro G32"):
-            self._screen._ws.klippy.gcode_script("G32")
+        g32 = self._printer.config_section_exists("gcode_macro G32")
+        if self.qgl_clear_src:
+            GLib.source_remove(self.qgl_clear_src)
+            self.qgl_clear_src = None
+        self.qgl = {"stage": "home" if g32 else "level", "passes": 0,
+                    "points": 0, "range": None, "tol": None}
+        self.qgl_btn.set_sensitive(False)
+        self._qgl_show()
+        self._qgl_pulse_start()
+        self._screen._ws.klippy.gcode_script(
+            "G32" if g32 else "QUAD_GANTRY_LEVEL", self._qgl_done)
+
+    def _qgl_points(self):
+        # probe lines at the QGL corners count as leveling progress; the
+        # homing probe at bed center does not
+        try:
+            raw = self._printer.get_config_section("quad_gantry_level")["points"]
+            nums = [float(n) for n in re.findall(r"-?\d+(?:\.\d+)?", raw)]
+            return list(zip(nums[0::2], nums[1::2]))
+        except (KeyError, TypeError, ValueError):
+            return []
+
+    def _qgl_response(self, data):
+        q = self.qgl
+        m = QGL_PROBE_RE.search(data)
+        if m:
+            x, y = float(m.group(1)), float(m.group(2))
+            # the reported spot is offset from the configured point by the
+            # probe offset (~23 mm here), well inside this match radius
+            if self.qgl_points and not any(
+                    abs(x - px_) < 40 and abs(y - py_) < 40
+                    for px_, py_ in self.qgl_points):
+                return
+            q["stage"] = "level"
+            q["points"] = min(q["points"] + 1, max(len(self.qgl_points), 1))
+            self._qgl_show()
+            return
+        m = QGL_RETRY_RE.search(data)
+        if m:
+            q["passes"] = int(m.group(1)) + 1
+            q["points"] = 0
+            q["range"], q["tol"] = float(m.group(3)), float(m.group(4))
+            if q["range"] <= q["tol"]:
+                q["stage"] = "finish"
+            self._qgl_show()
+
+    def _qgl_show(self):
+        q = self.qgl
+        n = max(len(self.qgl_points), 1)
+        if q["stage"] == "home":
+            text = _("Homing")
+        elif q["stage"] == "level":
+            text = (_("Leveling") + "  ·  " + _("pass") + f" {q['passes'] + 1}"
+                    + "  ·  " + _("point") + f" {min(q['points'] + 1, n)}/{n}")
+            if q["range"] is not None:
+                text += "  ·  " + _("range") + f" {q['range']:.4f} → {q['tol']:.4f}"
         else:
-            self._screen._ws.klippy.gcode_script("QUAD_GANTRY_LEVEL")
+            text = _("Leveled") + f" ({q['range']:.4f})  ·  " + _("homing Z and parking")
+        self.rail_lbl.set_label(text)
+
+    # same back-and-forth sweep the printing screen runs while preparing:
+    # the number of passes isn't known up front, so no fill estimate
+    def _qgl_pulse_start(self):
+        if self.qgl_pulse_src is None:
+            self.qgl_pulse_src = GLib.timeout_add(180, self._qgl_pulse)
+
+    def _qgl_pulse_stop(self):
+        if self.qgl_pulse_src is not None:
+            GLib.source_remove(self.qgl_pulse_src)
+            self.qgl_pulse_src = None
+
+    def _qgl_pulse(self):
+        if self.qgl is None:
+            self.qgl_pulse_src = None
+            return False
+        self.rail.pulse()
+        return True
+
+    def _qgl_done(self, result, method, params):
+        q = self.qgl
+        self.qgl = None
+        self._qgl_pulse_stop()
+        self.qgl_btn.set_sensitive(True)
+        if isinstance(result, dict) and "error" in result:
+            err = result["error"]
+            msg = err.get("message", "") if isinstance(err, dict) else str(err)
+            for w in (self.rail, self.root):
+                w.get_style_context().remove_class("ph-prep")
+                w.get_style_context().add_class("ph-err")
+            self.rail.set_fraction(1)
+            self.rail_lbl.set_label(_("QGL failed") + (f": {msg}" if msg else ""))
+            delay = 12
+        else:
+            self.rail.set_fraction(1)
+            text = _("Gantry leveled")
+            if q and q["range"] is not None:
+                text += f"  ·  {q['passes']} " + _("passes") + f"  ·  " + _("range") \
+                    + f" {q['range']:.4f}"
+            self.rail_lbl.set_label(text)
+            delay = 5
+        self.qgl_clear_src = GLib.timeout_add_seconds(delay, self._qgl_clear)
+
+    def _qgl_clear(self):
+        self.qgl_clear_src = None
+        for w in (self.rail, self.root):
+            w.get_style_context().remove_class("ph-err")
+            w.get_style_context().add_class("ph-prep")
+        self.rail.set_fraction(0)
+        self.rail_lbl.set_label("")
+        return False
 
     def bed_mesh(self, widget):
         self._screen._ws.klippy.gcode_script("BED_MESH_CALIBRATE")
@@ -759,10 +884,19 @@ class Panel(ScreenPanel):
     def deactivate(self):
         self.backdrop.hide()
         self.zcal_backdrop.hide()
+        self._qgl_pulse_stop()
+
+    def activate(self):
+        if self.qgl is not None:
+            self._qgl_pulse_start()
 
     # ---- data ----------------------------------------------------------------
 
     def process_update(self, action, data):
+        if action == "notify_gcode_response":
+            if self.qgl is not None:
+                self._qgl_response(data)
+            return
         if action != "notify_status_update":
             return
         homed = self._printer.get_stat("toolhead", "homed_axes")
