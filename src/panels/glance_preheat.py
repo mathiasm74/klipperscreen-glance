@@ -29,13 +29,15 @@ class Panel(ScreenPanel):
 
         specs = [("extruder", "extruder", _("Extruder"), 270, False),
                  ("heater_bed", "heater_bed", _("Bed"), 130, False)]
-        # a chamber heater gets a full slider; a bare sensor an inert row
+        # a chamber heater gets a full slider; a bare sensor only a graph
+        # line (an inert row cost the graph too much height)
+        self.chamber_device = None
         if self._printer.config_section_exists("heater_generic chamber"):
             specs.append(("heater_generic chamber", "chamber", _("Chamber"),
                           80, False))
+            self.chamber_device = "heater_generic chamber"
         elif self._printer.config_section_exists("temperature_sensor chamber"):
-            specs.append(("temperature_sensor chamber", None, _("Chamber"),
-                          80, True))
+            self.chamber_device = "temperature_sensor chamber"
 
         self.heaters = []
         for device, heater, name, fallback_max, readonly in specs:
@@ -265,10 +267,13 @@ class Panel(ScreenPanel):
         def tx(i, n):
             return 14 + px_w * (i / max(n - 1, 1))
 
+        lines = [(self.heaters[0], (1.0, 0.69, 0.0), 1.0, 4),
+                 (self.heaters[1], (0.91, 0.918, 0.929), 0.65, 3)]
+        if self.chamber_device:
+            lines.append(({"device": self.chamber_device},
+                          (0.36, 0.78, 0.95), 0.85, 2))
         series = []
-        for h, rgb, line_a, line_w in (
-                (self.heaters[0], (1.0, 0.69, 0.0), 1.0, 4),
-                (self.heaters[1], (0.91, 0.918, 0.929), 0.65, 3)):
+        for h, rgb, line_a, line_w in lines:
             temps = self._printer.get_temp_store(h["device"], "temperatures",
                                                  GRAPH_SECONDS)
             if not temps:
